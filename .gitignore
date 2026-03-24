@@ -1,0 +1,27 @@
+# Workspace
+.idea/
+*.iml
+
+# Temp archives
+backend.zip
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.idea/
+frontend/public/favicon.svg
+frontend/public/icons.svg
+frontend/src/assets/hero.png
+frontend/src/assets/react.svg
+frontend/src/assets/vite.svg
+
+# Backend
+backend/.gradle/
+backend/build/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

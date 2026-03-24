@@ -1,0 +1,998 @@
+영어 학습 웹 서비스 PRD + DB 스키마 + API 명세 + MVP 범위표
+1. PRD 문서
+1-1. 제품 개요
+제품명(가칭)
+NativeFlow
+부제: 한국어 의미부터 시작하는 원어민식 영어 학습 플랫폼
+
+제품 한 줄 설명
+한국어 뜻과 뉘앙스를 먼저 보고, 영어 표현을 직접 떠올려 입력한 뒤, 발음·영작·AI 첨삭·간격 반복 복습으로 영어를 체화하는 구독형 학습 웹 서비스.
+
+제품이 해결하려는 문제
+기존 영어 학습 서비스는 대체로 다음 중 하나에 치우쳐 있다.
+
+영어 단어를 단순 암기하게 만든다
+시험 대비 중심이라 실제 원어민 감각과 거리가 있다
+영어를 먼저 보여줘서 ‘회상 학습’이 약하다
+복습 시스템은 있지만 문맥 적용이나 영작 피드백이 약하다
+콘텐츠 구조가 산만해서 사용자가 꾸준히 이어가기 어렵다
+이 제품은 이를 해결하기 위해
+**“한국어 의미 → 영어 회상 → 정답 확인 → 영작 → AI 첨삭 → SRS 복습”**의 흐름을 핵심 학습 경험으로 제공한다.
+
+1-2. 목표
+비즈니스 목표
+초기 목표는 한국인 대상 영어 학습 웹 서비스의 MVP를 빠르게 출시하고,
+사용자의 학습 지속성과 반복 방문률을 높이는 것이다.
+
+사용자 목표
+사용자는 이 서비스를 통해 다음을 얻는다.
+
+한국어 뜻을 보고 영어를 떠올리는 훈련
+원어민식 뉘앙스 이해
+단어가 아니라 표현 단위의 습득
+내가 배운 표현으로 직접 영작
+AI를 통한 자연스러운 수정 피드백
+잊어버리기 전에 자동으로 다시 복습하는 흐름
+핵심 성공 지표
+초기 KPI는 아래 정도로 잡는 게 좋다.
+
+지표	설명
+회원가입 전환율	방문자 대비 회원가입 완료 비율
+첫 구독 전환율	가입자 중 첫 시리즈 구독 비율
+첫 학습 완료율	첫 학습 세션에서 1개 이상 학습 완료한 비율
+D7 리텐션	가입 후 7일 내 재방문 비율
+평균 일일 복습 완료 수	유저당 하루 평균 복습 완료 아이템 수
+AI 첨삭 사용률	학습 완료 유저 중 영작+AI 검토 사용 비율
+즐겨찾기 저장률	학습 중 북마크 기능 사용 비율
+1-3. 타겟 사용자
+1차 타겟
+한국어를 모국어로 사용하는 영어 학습자
+
+상세 사용자 유형
+이 서비스는 다음 사용자에게 특히 잘 맞는다.
+
+사용자 A: 실전 회화형 학습자
+문법책보다 실제 원어민이 쓰는 표현을 익히고 싶은 사용자.
+“doze off”, “pull off”, “figure out” 같은 표현을 상황감 있게 배우고 싶어 한다.
+
+사용자 B: 뉴스/시사 영어 확장형 학습자
+일상영어뿐 아니라 뉴스·정치·기술·과학 영어 표현을 체계적으로 배우고 싶은 사용자.
+
+사용자 C: 꾸준히 복습해 실력으로 남기고 싶은 사용자
+많이 보고 잊어버리는 패턴에서 벗어나, Anki 같은 간격 반복으로 장기 기억화를 원하는 사용자.
+
+1-4. 제품 원칙
+이 제품은 아래 원칙을 중심으로 설계한다.
+
+원칙 1. 한국어 의미가 먼저다
+학습의 출발점은 영어 단어 노출이 아니라 한국어 의미와 뉘앙스다.
+
+원칙 2. 회상 중심 학습이어야 한다
+정답을 먼저 보여주는 방식이 아니라, 사용자가 직접 떠올리게 해야 한다.
+
+원칙 3. 단어보다 표현 단위에 집중한다
+일상영어, 뉴스영어, 구동사, 상황 표현 등 실제 사용 단위 중심으로 구성한다.
+
+원칙 4. 입력과 적용이 있어야 한다
+정답 확인으로 끝나면 안 되고, 사용자가 직접 문장을 만들어봐야 한다.
+
+원칙 5. 반복 복습은 자동화되어야 한다
+사용자는 “무엇을 복습할지” 고민하지 않고, 시스템이 적절한 시점에 보여줘야 한다.
+
+1-5. 범위
+MVP 포함 범위
+초기 버전에서 반드시 들어가야 하는 기능은 다음과 같다.
+
+로그인 / 회원가입
+대시보드
+시리즈 목록 및 상세
+시리즈 구독
+좌측 사이드바 내 구독 시리즈 표시
+학습 카드 화면
+정답 입력 및 정답 공개
+발음 오디오 재생
+즐겨찾기 저장
+영작 입력
+AI 첨삭
+SRS 기반 복습 큐
+복습 결과 저장
+기본 프로필 / 설정
+관리자용 콘텐츠 등록 기능(최소형)
+MVP 제외 범위
+초기 출시에서 제외해도 되는 기능은 아래와 같다.
+
+결제/유료 구독 플랜
+소셜 기능
+리더보드
+모바일 앱 네이티브 버전
+음성 인식 답변
+고급 분석 대시보드
+사용자 간 커뮤니티
+다국어 UI 완전 지원
+자동 콘텐츠 생성 파이프라인
+1-6. 핵심 사용자 흐름
+흐름 A. 신규 유저 첫 사용
+사용자가 회원가입한다
+대시보드에 진입한다
+업로드된 시리즈를 본다
+관심 있는 시리즈를 구독한다
+좌측 “내 학습 시리즈”에 시리즈가 추가된다
+하위 학습팩을 선택한다
+첫 학습 아이템을 시작한다
+한국어 뜻을 보고 영어를 입력한다
+정답을 확인한다
+발음을 듣고 저장하거나 영작한다
+AI 첨삭을 받는다
+복습 난이도를 선택한다
+흐름 B. 재방문 사용자
+사용자가 로그인한다
+대시보드 또는 복습 큐에 진입한다
+오늘 복습할 항목을 확인한다
+복습 세션을 시작한다
+Again / Hard / Good / Easy 중 하나를 선택한다
+다음 복습일이 자동 계산된다
+흐름 C. 콘텐츠 관리자
+관리자가 로그인한다
+새 시리즈를 생성한다
+하위 팩을 만든다
+각 팩에 학습 아이템을 등록한다
+한국어 뜻, 영어 표현, 뉘앙스, 예문, 태그, 오디오를 입력한다
+공개 상태로 전환한다
+일반 사용자 대시보드에 노출된다
+1-7. 화면별 요구사항
+A. 로그인 페이지
+목적
+빠르게 인증을 완료하고 서비스 진입을 유도한다.
+
+필수 요소
+이메일
+비밀번호
+로그인 버튼
+회원가입 이동
+소셜 로그인(선택)
+비밀번호 재설정 링크
+성공 조건
+정상 로그인 시 대시보드로 이동한다.
+
+B. 회원가입 페이지
+목적
+신규 사용자 생성
+
+필수 요소
+이름 또는 닉네임
+이메일
+비밀번호
+약관 동의
+회원가입 버튼
+로그인 이동 링크
+성공 조건
+가입 완료 후 온보딩 없이 바로 대시보드 진입 가능해야 한다.
+
+C. 대시보드
+목적
+사용 가능한 시리즈 탐색, 구독, 현재 학습 상태 확인
+
+필수 요소
+상단 요약
+오늘 복습 수
+구독 중 시리즈 수
+저장한 표현 수
+업로드된 시리즈 카드 목록
+최근 학습 항목 또는 이어서 학습
+좌측 사이드바
+대시보드
+내 학습 시리즈
+즐겨찾기
+복습 큐
+설정
+성공 조건
+사용자가 3클릭 이내에 원하는 시리즈를 구독하고 학습 진입 가능해야 한다.
+
+D. 시리즈 상세 페이지
+목적
+한 시리즈 내 학습팩 구조를 이해하고 학습을 시작하게 한다.
+
+필수 요소
+시리즈 제목/설명
+하위 학습팩 목록
+각 팩별 아이템 수
+구독/학습 시작 버튼
+진행률
+E. 학습 화면
+목적
+핵심 학습 경험 제공
+
+필수 요소
+한국어 뜻
+뉘앙스 설명
+영어 입력창
+제출 버튼
+정답 공개 상태
+발음 오디오 버튼
+즐겨찾기 버튼
+영작 입력 영역
+AI 첨삭 버튼
+복습 평가 버튼(Again / Hard / Good / Easy)
+성공 조건
+사용자가 한 학습 아이템에 대해
+
+답을 입력하고
+정답을 확인하고
+필요시 영작/AI 검토를 수행하고
+복습 상태를 저장할 수 있어야 한다.
+F. 즐겨찾기 페이지
+목적
+저장한 표현을 다시 모아본다.
+
+필수 요소
+저장 항목 목록
+시리즈/팩 필터
+검색
+항목 클릭 시 학습 화면 이동
+G. 복습 큐 페이지
+목적
+오늘 복습해야 할 학습 아이템을 모아서 보여준다.
+
+필수 요소
+오늘 복습 수
+overdue 수
+복습 시작 버튼
+아이템 리스트
+완료율 표시
+H. 설정 페이지
+목적
+계정 및 학습 선호 설정
+
+필수 요소
+사용자 정보
+기본 언어
+목표 언어
+알림 관련 설정(후속)
+로그아웃
+I. 관리자 콘텐츠 페이지
+목적
+운영자가 콘텐츠를 업로드/수정/배포
+
+필수 요소
+시리즈 생성
+팩 생성
+학습 아이템 생성/수정/삭제
+공개 상태 관리
+1-8. 기능 요구사항
+인증
+이메일 기반 회원가입/로그인 가능해야 한다.
+세션이 유지되어야 한다.
+인증되지 않은 사용자는 보호 페이지 접근이 불가해야 한다.
+구독
+사용자는 시리즈를 구독할 수 있어야 한다.
+구독한 시리즈는 좌측 사이드바에 표시되어야 한다.
+학습
+학습 아이템은 기본적으로 한국어 뜻을 먼저 보여줘야 한다.
+영어 정답은 제출 전까지 숨겨야 한다.
+제출 후 정답, 발음, 부가정보가 보여야 한다.
+학습 결과는 저장되어야 한다.
+즐겨찾기
+사용자는 학습 아이템을 즐겨찾기할 수 있어야 한다.
+저장 목록에서 다시 접근 가능해야 한다.
+영작/AI 첨삭
+사용자는 표현을 이용한 영작을 제출할 수 있어야 한다.
+AI는 문법/자연스러움/표현 적절성을 평가해야 한다.
+피드백은 한국어 중심으로 보여주는 것이 좋다.
+복습
+사용자의 각 학습 아이템은 개별 복습 스케줄을 가져야 한다.
+복습 버튼 결과에 따라 next_review_at이 갱신되어야 한다.
+오늘 날짜 기준 due 아이템이 복습 큐에 표시되어야 한다.
+관리자 기능
+운영자는 시리즈/팩/아이템을 생성·수정·삭제할 수 있어야 한다.
+공개 여부를 관리할 수 있어야 한다.
+1-9. 비기능 요구사항
+성능
+대시보드 첫 로딩은 2초 이내가 목표다.
+학습 카드 전환은 즉각적이어야 한다.
+AI 첨삭은 최대 5~8초 이내 응답을 목표로 한다.
+보안
+비밀번호는 해시 저장해야 한다.
+관리자/일반 사용자 권한 분리가 필요하다.
+학습 이력 및 사용자 데이터는 사용자 본인만 접근 가능해야 한다.
+확장성
+source_language / target_language 구조로 다국어 확장 가능해야 한다.
+콘텐츠 구조는 시리즈 > 팩 > 아이템 형태로 유지한다.
+SRS 엔진은 사용자별 상태 기반이어야 한다.
+운영성
+관리자 없이 DB 직접 수정하는 구조는 피한다.
+최소한 내부 어드민 페이지 또는 CSV import 구조가 필요하다.
+1-10. 수용 기준
+예시: 시리즈 구독
+사용자가 구독 버튼을 누르면 성공 메시지가 뜬다
+좌측 사이드바에 시리즈가 추가된다
+대시보드 카드 상태가 구독중으로 바뀐다
+예시: 학습 카드 제출
+사용자가 영어를 입력하고 제출한다
+정답 여부가 판별된다
+정답이 공개된다
+발음 버튼, 저장 버튼, 영작 영역이 노출된다
+예시: SRS 저장
+사용자가 Good을 누른다
+현재 아이템의 next_review_at이 갱신된다
+복습 큐에서 즉시 제거되거나 다음 상태로 이동한다
+2. DB 스키마
+아래는 PostgreSQL 기준의 추천 구조다.
+실제 구현 시 Prisma 또는 Supabase 스키마로 변환해도 된다.
+
+2-1. 핵심 테이블 구조
+users
+Copycreate table users (
+  id uuid primary key default gen_random_uuid(),
+  email varchar(255) unique not null,
+  password_hash text,
+  auth_provider varchar(50) default 'email',
+  name varchar(100),
+  role varchar(20) default 'user', -- user, admin
+  native_language varchar(10) default 'ko',
+  target_language varchar(10) default 'en',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+series
+Copycreate table series (
+  id uuid primary key default gen_random_uuid(),
+  title varchar(255) not null,
+  slug varchar(255) unique not null,
+  description text,
+  thumbnail_url text,
+  category varchar(100),
+  source_language varchar(10) default 'ko',
+  target_language varchar(10) default 'en',
+  is_published boolean default false,
+  created_by uuid references users(id),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+packs
+Copycreate table packs (
+  id uuid primary key default gen_random_uuid(),
+  series_id uuid not null references series(id) on delete cascade,
+  title varchar(255) not null,
+  description text,
+  order_index integer default 0,
+  is_published boolean default false,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+learning_items
+Copycreate table learning_items (
+  id uuid primary key default gen_random_uuid(),
+  pack_id uuid not null references packs(id) on delete cascade,
+  source_text text not null,         -- 예: 꾸벅 잠들다
+  target_text text not null,         -- 예: doze off
+  nuance_note text,
+  part_of_speech varchar(50),
+  tags text[],
+  difficulty varchar(20),            -- beginner, intermediate, advanced
+  example_sentence text,
+  example_translation text,
+  audio_url text,
+  synonyms text[],
+  accepted_answers text[],
+  order_index integer default 0,
+  is_published boolean default true,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+subscriptions
+Copycreate table subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  series_id uuid not null references series(id) on delete cascade,
+  status varchar(20) default 'active',
+  subscribed_at timestamptz default now(),
+  unique(user_id, series_id)
+);
+favorites
+Copycreate table favorites (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  learning_item_id uuid not null references learning_items(id) on delete cascade,
+  created_at timestamptz default now(),
+  unique(user_id, learning_item_id)
+);
+user_answers
+Copycreate table user_answers (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  learning_item_id uuid not null references learning_items(id) on delete cascade,
+  typed_answer text not null,
+  normalized_answer text,
+  is_correct boolean,
+  response_time_ms integer,
+  created_at timestamptz default now()
+);
+sentence_practices
+Copycreate table sentence_practices (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  learning_item_id uuid not null references learning_items(id) on delete cascade,
+  sentence_text text not null,
+  ai_feedback jsonb,
+  ai_score numeric(5,2),
+  created_at timestamptz default now()
+);
+review_schedules
+Copycreate table review_schedules (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  learning_item_id uuid not null references learning_items(id) on delete cascade,
+  ease_factor numeric(4,2) default 2.50,
+  interval_days integer default 0,
+  repetition_count integer default 0,
+  lapse_count integer default 0,
+  next_review_at timestamptz,
+  last_reviewed_at timestamptz,
+  last_result varchar(20), -- again, hard, good, easy
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique(user_id, learning_item_id)
+);
+review_logs
+Copycreate table review_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  learning_item_id uuid not null references learning_items(id) on delete cascade,
+  review_schedule_id uuid references review_schedules(id) on delete set null,
+  result varchar(20) not null, -- again, hard, good, easy
+  previous_interval_days integer,
+  new_interval_days integer,
+  previous_ease_factor numeric(4,2),
+  new_ease_factor numeric(4,2),
+  reviewed_at timestamptz default now()
+);
+2-2. 선택 확장 테이블
+series_progress
+시리즈 단위 진도 요약을 캐싱하고 싶으면 추가한다.
+
+Copycreate table series_progress (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  series_id uuid not null references series(id) on delete cascade,
+  total_items integer default 0,
+  learned_items integer default 0,
+  due_items integer default 0,
+  last_studied_at timestamptz,
+  updated_at timestamptz default now(),
+  unique(user_id, series_id)
+);
+content_import_jobs
+관리자 CSV 업로드용 추후 확장
+
+Copycreate table content_import_jobs (
+  id uuid primary key default gen_random_uuid(),
+  uploaded_by uuid references users(id),
+  file_url text,
+  status varchar(20) default 'pending',
+  result_summary jsonb,
+  created_at timestamptz default now()
+);
+2-3. 인덱스 권장
+Copycreate index idx_series_published on series(is_published);
+create index idx_packs_series_id on packs(series_id);
+create index idx_learning_items_pack_id on learning_items(pack_id);
+create index idx_learning_items_published on learning_items(is_published);
+create index idx_subscriptions_user_id on subscriptions(user_id);
+create index idx_favorites_user_id on favorites(user_id);
+create index idx_review_schedules_user_next_review on review_schedules(user_id, next_review_at);
+create index idx_user_answers_user_item on user_answers(user_id, learning_item_id);
+create index idx_sentence_practices_user_item on sentence_practices(user_id, learning_item_id);
+3. API 명세
+형식은 REST 기준으로 적어줄게.
+실제 구현은 REST나 tRPC 둘 다 가능하지만, 문서 전달용으론 REST가 제일 직관적이다.
+
+기본 prefix 예시:
+
+Copy/api/v1
+인증 방식은 JWT 또는 세션 쿠키 기반을 권장한다.
+
+3-1. 인증 API
+POST /auth/signup
+회원가입
+
+request
+Copy{
+  "name": "홍길동",
+  "email": "user@example.com",
+  "password": "password123",
+  "nativeLanguage": "ko",
+  "targetLanguage": "en"
+}
+response
+Copy{
+  "user": {
+    "id": "uuid",
+    "name": "홍길동",
+    "email": "user@example.com",
+    "role": "user"
+  },
+  "token": "jwt-token"
+}
+POST /auth/login
+로그인
+
+request
+Copy{
+  "email": "user@example.com",
+  "password": "password123"
+}
+response
+Copy{
+  "user": {
+    "id": "uuid",
+    "name": "홍길동",
+    "email": "user@example.com"
+  },
+  "token": "jwt-token"
+}
+POST /auth/logout
+로그아웃
+
+response
+Copy{
+  "success": true
+}
+GET /auth/me
+내 정보 조회
+
+response
+Copy{
+  "id": "uuid",
+  "name": "홍길동",
+  "email": "user@example.com",
+  "role": "user",
+  "nativeLanguage": "ko",
+  "targetLanguage": "en"
+}
+3-2. 시리즈/콘텐츠 API
+GET /series
+공개된 시리즈 목록
+
+query
+category
+subscribedOnly
+search
+response
+Copy{
+  "items": [
+    {
+      "id": "uuid",
+      "title": "일상영어 원어민 시리즈",
+      "slug": "everyday-native-series",
+      "description": "상황별 일상영어 표현 학습",
+      "thumbnailUrl": "https://...",
+      "category": "everyday",
+      "isSubscribed": true,
+      "packCount": 3,
+      "itemCount": 1000,
+      "progress": 24
+    }
+  ]
+}
+GET /series/:seriesId
+시리즈 상세 조회
+
+response
+Copy{
+  "id": "uuid",
+  "title": "일상영어 원어민 시리즈",
+  "description": "상황별 일상영어의 거의 모든 표현",
+  "isSubscribed": true,
+  "packs": [
+    {
+      "id": "uuid",
+      "title": "상황별 일상영어의 거의 모든 구동사",
+      "description": "실전 구동사 중심 학습팩",
+      "orderIndex": 1,
+      "itemCount": 320
+    }
+  ]
+}
+GET /packs/:packId
+팩 상세 조회
+
+response
+Copy{
+  "id": "uuid",
+  "seriesId": "uuid",
+  "title": "상황별 일상영어의 거의 모든 구동사",
+  "description": "구동사 집중 학습팩",
+  "itemsCount": 320
+}
+GET /packs/:packId/items
+팩 내 학습 아이템 목록
+초기엔 목록 대신 첫 아이템부터 순차 제공 방식도 가능하다.
+
+query
+page
+limit
+response
+Copy{
+  "items": [
+    {
+      "id": "uuid",
+      "sourceText": "꾸벅 잠들다",
+      "targetTextHidden": true,
+      "partOfSpeech": "phrasal verb"
+    }
+  ]
+}
+GET /learning-items/:itemId
+학습 아이템 상세 조회
+
+response
+Copy{
+  "id": "uuid",
+  "packId": "uuid",
+  "sourceText": "꾸벅 잠들다",
+  "nuanceNote": "완전히 깊게 자는 것이 아니라 잠깐 졸다",
+  "partOfSpeech": "phrasal verb",
+  "audioUrl": "https://...",
+  "isFavorited": false,
+  "answerRevealed": false
+}
+POST /learning-items/:itemId/check-answer
+정답 판별
+
+request
+Copy{
+  "typedAnswer": "doze off",
+  "responseTimeMs": 4200
+}
+response
+Copy{
+  "isCorrect": true,
+  "correctAnswer": "doze off",
+  "acceptedAnswers": ["doze off"],
+  "exampleSentence": "I dozed off on the couch for a few minutes.",
+  "exampleTranslation": "나는 소파에서 몇 분 동안 꾸벅 잠들었다.",
+  "audioUrl": "https://..."
+}
+처리 원칙
+trim 처리
+lowercase 처리
+다중 공백 정리
+accepted_answers 기준 허용
+향후 유사 철자 허용 로직 추가 가능
+3-3. 구독 API
+POST /series/:seriesId/subscribe
+시리즈 구독
+
+response
+Copy{
+  "success": true,
+  "subscription": {
+    "seriesId": "uuid",
+    "status": "active"
+  }
+}
+DELETE /series/:seriesId/subscribe
+구독 해지
+
+response
+Copy{
+  "success": true
+}
+GET /me/subscriptions
+내 구독 시리즈 목록
+
+response
+Copy{
+  "items": [
+    {
+      "seriesId": "uuid",
+      "title": "일상영어 원어민 시리즈",
+      "progress": 24
+    }
+  ]
+}
+3-4. 즐겨찾기 API
+POST /learning-items/:itemId/favorite
+즐겨찾기 추가
+
+response
+Copy{
+  "success": true,
+  "isFavorited": true
+}
+DELETE /learning-items/:itemId/favorite
+즐겨찾기 제거
+
+response
+Copy{
+  "success": true,
+  "isFavorited": false
+}
+GET /me/favorites
+즐겨찾기 목록
+
+query
+seriesId
+packId
+search
+response
+Copy{
+  "items": [
+    {
+      "itemId": "uuid",
+      "sourceText": "꾸벅 잠들다",
+      "targetText": "doze off",
+      "seriesTitle": "일상영어 원어민 시리즈",
+      "packTitle": "구동사"
+    }
+  ]
+}
+3-5. 영작 / AI 첨삭 API
+POST /learning-items/:itemId/sentence-practice
+영작 저장 + AI 첨삭 요청
+
+request
+Copy{
+  "sentenceText": "I dozed off while watching TV."
+}
+response
+Copy{
+  "practiceId": "uuid",
+  "sentenceText": "I dozed off while watching TV.",
+  "aiFeedback": {
+    "grammar": "문법적으로 자연스럽습니다.",
+    "naturalness": "실제 원어민이 사용할 수 있는 문장입니다.",
+    "usage": "doze off의 의미가 문맥에 잘 맞습니다.",
+    "suggestion": "I dozed off on the couch while watching TV.",
+    "koreanExplanation": "TV를 보다 잠깐 졸았다는 의미가 자연스럽게 전달됩니다."
+  },
+  "aiScore": 92
+}
+GET /me/sentence-practices
+내 영작 기록 목록
+
+response
+Copy{
+  "items": [
+    {
+      "practiceId": "uuid",
+      "itemId": "uuid",
+      "sourceText": "꾸벅 잠들다",
+      "sentenceText": "I dozed off while watching TV.",
+      "aiScore": 92,
+      "createdAt": "2026-03-23T10:00:00Z"
+    }
+  ]
+}
+3-6. 복습 API
+GET /me/review-queue
+오늘 복습할 아이템 목록
+
+query
+limit
+overdueOnly
+response
+Copy{
+  "summary": {
+    "dueCount": 24,
+    "overdueCount": 5
+  },
+  "items": [
+    {
+      "itemId": "uuid",
+      "sourceText": "꾸벅 잠들다",
+      "nuanceNote": "잠깐 깜빡 졸다",
+      "seriesTitle": "일상영어 원어민 시리즈",
+      "packTitle": "구동사"
+    }
+  ]
+}
+POST /learning-items/:itemId/review
+복습 결과 저장 및 next_review_at 계산
+
+request
+Copy{
+  "result": "good"
+}
+response
+Copy{
+  "success": true,
+  "reviewSchedule": {
+    "learningItemId": "uuid",
+    "lastResult": "good",
+    "intervalDays": 3,
+    "easeFactor": 2.5,
+    "nextReviewAt": "2026-03-26T00:00:00Z"
+  }
+}
+권장 초기 로직
+again: 1일, repetition_count 초기화 또는 감소
+hard: 2일
+good: 3일
+easy: 4~6일
+이후엔 ease_factor 기반 확장
+GET /me/review-stats
+복습 요약 통계
+
+response
+Copy{
+  "todayReviewedCount": 18,
+  "dueCount": 24,
+  "overdueCount": 5,
+  "streakDays": 7
+}
+3-7. 관리자 API
+POST /admin/series
+시리즈 생성
+
+request
+Copy{
+  "title": "일상영어 원어민 시리즈",
+  "slug": "everyday-native-series",
+  "description": "상황별 일상영어 표현 학습",
+  "category": "everyday",
+  "thumbnailUrl": "https://..."
+}
+PATCH /admin/series/:seriesId
+시리즈 수정
+
+POST /admin/packs
+팩 생성
+
+request
+Copy{
+  "seriesId": "uuid",
+  "title": "상황별 일상영어의 거의 모든 구동사",
+  "description": "실전 구동사 학습팩",
+  "orderIndex": 1
+}
+POST /admin/learning-items
+학습 아이템 생성
+
+request
+Copy{
+  "packId": "uuid",
+  "sourceText": "꾸벅 잠들다",
+  "targetText": "doze off",
+  "nuanceNote": "깊게 자는 것이 아니라 잠깐 졸다",
+  "partOfSpeech": "phrasal verb",
+  "tags": ["daily", "sleep"],
+  "difficulty": "beginner",
+  "exampleSentence": "I dozed off on the bus.",
+  "exampleTranslation": "나는 버스에서 꾸벅 잠들었다.",
+  "audioUrl": "https://...",
+  "acceptedAnswers": ["doze off"]
+}
+PATCH /admin/learning-items/:itemId
+학습 아이템 수정
+
+DELETE /admin/learning-items/:itemId
+학습 아이템 삭제
+
+4. SRS 로직 가이드
+초기 MVP에서는 너무 복잡하게 가지 말고,
+간단하지만 확장 가능한 규칙으로 시작하는 게 좋다.
+
+4-1. 초기 상태
+사용자가 어떤 아이템을 처음 학습 완료하면 review_schedules 레코드를 만든다.
+
+기본값:
+
+ease_factor = 2.5
+interval_days = 0
+repetition_count = 0
+4-2. 버튼별 동작 예시
+버튼	interval_days	repetition_count	ease_factor
+again	1	max(0, current-1)	-0.20
+hard	max(2, current interval)	+1	-0.10
+good	current 기준 점진 증가	+1	유지
+easy	current보다 더 크게 증가	+1	+0.10
+4-3. MVP용 단순 계산 예시
+좀 더 단순하게 시작하고 싶으면 이렇게 가도 된다.
+
+첫 리뷰
+again → 1일
+hard → 2일
+good → 3일
+easy → 4일
+두 번째 이후
+again → 1일
+hard → 현재 interval * 1.2
+good → 현재 interval * 1.8
+easy → 현재 interval * 2.5
+실제 저장 시엔 반올림해서 integer day로 처리한다.
+
+5. MVP 범위표
+아래는 진짜 중요한 문서다.
+이걸 안 나누면 처음부터 기능이 너무 커져서 일정이 밀린다.
+
+5-1. 꼭 들어가야 하는 것
+구분	기능	MVP 포함 여부	비고
+인증	이메일 회원가입/로그인	포함	필수
+인증	소셜 로그인	선택	후순위
+대시보드	시리즈 목록 표시	포함	필수
+대시보드	내 구독 시리즈 표시	포함	필수
+콘텐츠	시리즈 상세	포함	필수
+콘텐츠	팩 상세	포함	필수
+학습	한국어 뜻 먼저 표시	포함	핵심
+학습	영어 입력 및 정답 체크	포함	핵심
+학습	발음 오디오 재생	포함	가능하면 포함
+학습	즐겨찾기	포함	중요
+학습	영작 입력	포함	중요
+AI	영작 AI 첨삭	포함	차별화 포인트
+복습	review queue	포함	핵심
+복습	Again/Hard/Good/Easy 저장	포함	핵심
+설정	프로필 기본 설정	포함	최소형
+관리자	시리즈/팩/아이템 생성	포함	운영 필수
+5-2. 있으면 좋지만 2차 배포로 미뤄도 되는 것
+구분	기능	MVP 포함 여부	비고
+학습	음성 입력 답변	제외	고비용
+학습	정답 오타 허용 고도화	부분 포함	단순 normalize만 먼저
+AI	첨삭 히스토리 상세 분석	제외	2차
+대시보드	학습 분석 그래프	제외	2차
+콘텐츠	검색 고도화	제외	2차
+관리자	CSV 일괄 업로드	제외	2차
+관리자	콘텐츠 버전관리	제외	2차
+사용자	알림 발송	제외	2차
+사용자	연속 학습 streak 시스템	부분 포함	단순 수치만
+결제	유료 플랜/결제	제외	제품 검증 후
+다국어	다국어 UI 전환	제외	구조만 대비
+5-3. 절대 지금 넣지 말아야 하는 것
+기능	이유
+커뮤니티/댓글	핵심 가치 검증과 무관
+랭킹/게임화 과다	제품 톤과 맞지 않음
+복잡한 시험 모드	현재 방향과 다름
+모바일 앱 동시 개발	웹 MVP 집중 필요
+자체 AI 콘텐츠 자동생성	초기 운영 안정화가 먼저
+지나치게 복잡한 SRS 공식	먼저 사용 흐름 검증이 우선
+6. 추천 개발 순서
+이건 팀이 바로 일정 짤 때 유용하다.
+
+Phase 1. 기반 구축
+인증
+공통 레이아웃
+DB 기본 스키마
+관리자 최소 페이지
+시리즈/팩/아이템 CRUD
+Phase 2. 핵심 학습 플로우
+대시보드
+시리즈 구독
+학습 화면
+정답 체크
+즐겨찾기
+Phase 3. AI + SRS
+영작 입력
+AI 첨삭
+review_schedules
+review_queue
+복습 결과 저장
+Phase 4. 다듬기
+진행률 계산
+검색/필터
+성능 최적화
+UX polish
+7. 개발팀 전달용 한 줄 요약
+이 서비스는
+**“한국어 뜻을 보고 영어를 회상하게 하는 학습 경험”**과
+**“AI 영작 첨삭 + SRS 복습”**이 핵심인 구독형 영어 학습 플랫폼이다.
+
+즉 MVP에서 절대 흔들리면 안 되는 우선순위는 아래 순서다.
+
+콘텐츠 구조 → 구독 → 학습 카드 → 정답 체크 → AI 첨삭 → 복습 큐
+
+8. 바로 다음 단계로 이어서 할 수 있는 것
+원하면 다음 답변에서 바로 이어서 아래 3개 중 하나를 만들어줄 수 있어.
+
+A. 개발자용 더 실전 문서
+Next.js + Supabase 기준 폴더 구조
+Prisma schema
+ERD
+API 구현 우선순위
+B. 디자이너/프론트용 문서
+페이지별 UI 컴포넌트 명세
+상태값 정의
+버튼/모달/에러 상태 규칙
+C. 바로 코딩 시작용 문서
+MVP 태스크 분해표
+주차별 개발 일정표
+프론트/백/디자인 할 일 분리표

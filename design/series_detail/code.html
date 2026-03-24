@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=Pretendard:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed": "#281900",
+                        "surface-container-high": "#e7e8e9",
+                        "primary-fixed-dim": "#bdc2ff",
+                        "surface-container-low": "#f3f4f5",
+                        "on-primary-fixed-variant": "#343d96",
+                        "outline": "#767683",
+                        "on-secondary-container": "#006f67",
+                        "inverse-primary": "#bdc2ff",
+                        "surface-bright": "#f8f9fa",
+                        "on-secondary-fixed-variant": "#00504a",
+                        "on-secondary-fixed": "#00201d",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#1a237e",
+                        "surface-container": "#edeeef",
+                        "outline-variant": "#c6c5d4",
+                        "secondary-fixed-dim": "#71d7cd",
+                        "primary-fixed": "#e0e0ff",
+                        "on-error-container": "#93000a",
+                        "primary": "#000666",
+                        "tertiary": "#271800",
+                        "tertiary-fixed-dim": "#ffba38",
+                        "on-secondary": "#ffffff",
+                        "surface-container-highest": "#e1e3e4",
+                        "on-primary-container": "#8690ee",
+                        "secondary-container": "#8bf1e6",
+                        "inverse-on-surface": "#f0f1f2",
+                        "tertiary-fixed": "#ffdeac",
+                        "on-surface-variant": "#454652",
+                        "background": "#f8f9fa",
+                        "tertiary-container": "#422c00",
+                        "on-tertiary-container": "#c98c00",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed": "#000767",
+                        "on-tertiary-fixed-variant": "#604100",
+                        "on-error": "#ffffff",
+                        "surface-dim": "#d9dadb",
+                        "error-container": "#ffdad6",
+                        "surface-tint": "#4c56af",
+                        "surface": "#f8f9fa",
+                        "on-background": "#191c1d",
+                        "secondary": "#006a63",
+                        "inverse-surface": "#2e3132",
+                        "secondary-fixed": "#8ef4e9",
+                        "on-surface": "#191c1d",
+                        "surface-variant": "#e1e3e4"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope", "Pretendard"],
+                        "body": ["Inter", "Pretendard"],
+                        "label": ["Inter", "Pretendard"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', 'Pretendard', sans-serif;
+            background-color: #f8f9fa;
+            color: #191c1d;
+        }
+        .academic-gradient {
+            background: linear-gradient(135deg, #000666 0%, #1a237e 100%);
+        }
+    </style>
+</head>
+<body class="bg-surface">
+<!-- SideNavBar Shell -->
+<aside class="fixed left-0 top-0 h-full flex flex-col p-4 bg-slate-50 dark:bg-slate-900 h-screen w-64 border-r-0 z-40">
+<div class="mb-8 px-2">
+<h1 class="text-xl font-bold text-indigo-900 dark:text-indigo-100 font-headline">영단어원어민처럼</h1>
+<p class="text-xs text-slate-500 font-medium mt-1">Premium English Learning</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors rounded-lg font-['Manrope','Pretendard'] font-semibold text-sm" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>대시보드</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-indigo-700 dark:text-indigo-300 bg-white dark:bg-slate-800 rounded-lg shadow-sm font-['Manrope','Pretendard'] font-semibold text-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">subscriptions</span>
+<span>나의 학습 시리즈</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors rounded-lg font-['Manrope','Pretendard'] font-semibold text-sm" href="#">
+<span class="material-symbols-outlined">bookmark</span>
+<span>저장한 표현</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors rounded-lg font-['Manrope','Pretendard'] font-semibold text-sm" href="#">
+<span class="material-symbols-outlined">rebase_edit</span>
+<span>복습 큐</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors rounded-lg font-['Manrope','Pretendard'] font-semibold text-sm" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>설정</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 border-t border-slate-100 dark:border-slate-800">
+<div class="flex items-center gap-3 px-2 mb-4">
+<div class="w-10 h-10 rounded-full bg-indigo-100 overflow-hidden">
+<img alt="User Profile Picture" data-alt="User profile avatar with professional look" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGWtruQAxSpGODx6_weQvYpkQ0Z6R1nk1epYdXD3ZvbbO2ZmZXQeu2dAkio_DWHt_qewV2UY5wYZffkSScJX_iIeeRqddkTb0ZptdxSN2TqiPKA5vQljA0A0ZmPgJQDPjlv2soYBusoyZSI70ehuCp9NEzRoIjTJu_Roqgw_5hczdaC8Vy8I03uXre3WKA6tP3b-uzVyPdBY1GGw-U_JaY-ayqcYYq0u2ym4Qe64Kctwyv8lOUyFbfiHUB95kdXOkxdnyXxnBCi6w"/>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">김준수</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wider">Premium Member</p>
+</div>
+</div>
+<button class="w-full academic-gradient text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-indigo-900/20 active:scale-[0.98] transition-transform">
+                오늘의 학습 시작
+            </button>
+</div>
+</aside>
+<!-- TopNavBar Shell -->
+<header class="sticky top-0 z-30 flex justify-end items-center w-full px-8 py-4 ml-64 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm dark:shadow-none font-['Manrope','Pretendard'] font-medium text-base">
+<div class="flex items-center gap-6">
+<button class="text-slate-600 hover:text-indigo-700 transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-slate-600 hover:text-indigo-700 transition-all">
+<span class="material-symbols-outlined">history</span>
+</button>
+<button class="text-slate-600 hover:text-indigo-700 transition-all">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 p-8 min-h-screen">
+<!-- Hero Section: Intentional Asymmetry -->
+<section class="mb-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
+<div class="lg:col-span-8">
+<div class="flex items-center gap-3 mb-4">
+<span class="px-3 py-1 bg-secondary-container text-on-secondary-container text-xs font-bold rounded-full">수강 중</span>
+<span class="text-on-surface-variant text-xs font-medium">진행률 35%</span>
+</div>
+<h2 class="text-4xl font-extrabold text-on-surface font-headline leading-tight mb-4">
+                    네이티브처럼 말하는<br/>일상 영어 시리즈
+                </h2>
+<p class="text-lg text-on-surface-variant max-w-xl leading-relaxed">
+                    원어민이 매일 사용하는 구동사와 필수 표현을 완벽 정복하세요. 교과서 영어를 넘어 실제 대화의 뉘앙스를 학습합니다.
+                </p>
+</div>
+<div class="lg:col-span-4 flex justify-end">
+<div class="relative w-full aspect-square max-w-[280px] rounded-2xl overflow-hidden shadow-2xl">
+<img alt="Collaborative learning environment" class="object-cover w-full h-full" data-alt="Students studying together in a modern bright library" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgtO41oeBFL_uI413lYvgHmCYBQ8AzuAHdOGHPBn2uCFPI5JUbcGJ1P10AezDzoE80BxtraY3tzzyotNlZ4_uMe03EJ2OCALJlq0YUNMjT9hy6iBHcmDa5SjTy6ecFrLRaOcMhPS0toEIWiNpDwmNjrXbgRubE0heEXlk0B5dmw9Hxi0eou1hCNqi988dgtKLDF-aH1rCnozhapZX6BtZOqL3EWMT4ezuGI2OoUfTYuS_JIANMK_uL8wBYRtQ0bwGmstmRsVg1FyY"/>
+<div class="absolute inset-0 bg-indigo-900/20 mix-blend-multiply"></div>
+</div>
+</div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+<!-- Left: Learning Packs (Main) -->
+<div class="lg:col-span-8 space-y-6">
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-xl font-bold font-headline text-on-surface">학습 커리큘럼</h3>
+<span class="text-sm text-indigo-600 font-semibold">총 12개 유닛</span>
+</div>
+<!-- Learning Pack Cards -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10 flex items-center gap-6 hover:shadow-md transition-shadow cursor-pointer">
+<div class="w-14 h-14 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between mb-1">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Unit 1</span>
+<span class="text-[10px] font-bold text-secondary">학습 완료</span>
+</div>
+<h4 class="text-lg font-bold text-on-surface mb-1">감정 표현하기</h4>
+<p class="text-sm text-on-surface-variant">일상에서 느끼는 미묘한 감정의 차이를 영어로 설명하기</p>
+</div>
+<div class="text-right">
+<span class="text-xs font-bold text-on-surface-variant block mb-1">15 Items</span>
+<div class="w-24 h-1 bg-surface-container-high rounded-full">
+<div class="w-full h-full bg-secondary rounded-full"></div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10 flex items-center gap-6 hover:shadow-md transition-shadow cursor-pointer">
+<div class="w-14 h-14 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+<span class="material-symbols-outlined text-2xl">play_circle</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between mb-1">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Unit 2</span>
+<span class="text-[10px] font-bold text-indigo-600">진행 중</span>
+</div>
+<h4 class="text-lg font-bold text-on-surface mb-1">약속 정하기</h4>
+<p class="text-sm text-on-surface-variant">비즈니스 및 캐주얼 미팅을 제안하고 조율하는 필수 패턴</p>
+</div>
+<div class="text-right">
+<span class="text-xs font-bold text-on-surface-variant block mb-1">22 Items</span>
+<div class="w-24 h-1 bg-surface-container-high rounded-full">
+<div class="w-1/3 h-full bg-indigo-600 rounded-full"></div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-low/50 rounded-xl p-6 flex items-center gap-6 grayscale opacity-80 border border-transparent">
+<div class="w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center text-outline">
+<span class="material-symbols-outlined text-2xl">lock</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between mb-1">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Unit 3</span>
+<span class="text-[10px] font-bold text-on-surface-variant">잠김</span>
+</div>
+<h4 class="text-lg font-bold text-on-surface mb-1">업무 요청하기</h4>
+<p class="text-sm text-on-surface-variant">공손하면서도 명확하게 업무 협조를 구하는 이메일 및 대화 표현</p>
+</div>
+<div class="text-right">
+<span class="text-xs font-bold text-on-surface-variant block mb-1">18 Items</span>
+<div class="w-24 h-1 bg-surface-container-high rounded-full">
+</div>
+</div>
+</div>
+<!-- CTA Section -->
+<div class="bg-primary-container rounded-2xl p-8 relative overflow-hidden mt-10">
+<div class="relative z-10">
+<h3 class="text-2xl font-bold text-white mb-2">모든 시리즈를 무제한으로</h3>
+<p class="text-on-primary-container text-base mb-6 max-w-md">
+                            프리미엄 구독으로 500개 이상의 유닛과 AI 1:1 피드백 기능을 즉시 이용해보세요.
+                        </p>
+<button class="bg-tertiary-fixed-dim text-on-tertiary-fixed font-bold px-8 py-3 rounded-full hover:scale-105 transition-transform">
+                            프리미엄 멤버십 시작하기
+                        </button>
+</div>
+<!-- Decorative Element -->
+<div class="absolute -right-10 -bottom-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl"></div>
+</div>
+</div>
+<!-- Right: Content Sidebar -->
+<div class="lg:col-span-4 space-y-8">
+<!-- Tags & Info Card -->
+<div class="bg-surface-container-low rounded-2xl p-6">
+<h4 class="text-sm font-bold text-on-surface mb-4">시리즈 정보</h4>
+<div class="flex flex-wrap gap-2 mb-6">
+<span class="px-3 py-1.5 bg-white rounded-lg text-xs font-bold text-indigo-900 shadow-sm">구동사</span>
+<span class="px-3 py-1.5 bg-white rounded-lg text-xs font-bold text-indigo-900 shadow-sm">비즈니스</span>
+<span class="px-3 py-1.5 bg-white rounded-lg text-xs font-bold text-indigo-900 shadow-sm">중급</span>
+<span class="px-3 py-1.5 bg-white rounded-lg text-xs font-bold text-indigo-900 shadow-sm">원어민 표현</span>
+</div>
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<span class="text-xs text-on-surface-variant">강사</span>
+<span class="text-xs font-bold">Julianne Park</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs text-on-surface-variant">수준</span>
+<span class="text-xs font-bold">Intermediate (B2)</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs text-on-surface-variant">업데이트</span>
+<span class="text-xs font-bold">2024.05.12</span>
+</div>
+</div>
+</div>
+<!-- Audio Review Preview -->
+<div class="bg-tertiary-container text-on-tertiary-fixed rounded-2xl p-6 shadow-lg shadow-tertiary-container/10">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-tertiary-fixed-dim" style="font-variation-settings: 'FILL' 1;">star</span>
+<h4 class="text-sm font-bold text-tertiary-fixed">학습 요약 AI 노트</h4>
+</div>
+<p class="text-xs text-white/80 leading-relaxed mb-4">
+                        이번 유닛에서는 'Call off', 'Put off'의 미묘한 차이를 중점적으로 다룹니다. 취소와 연기의 정확한 뉘앙스를 파악하세요.
+                    </p>
+<button class="w-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 rounded-lg border border-white/20 transition-colors">
+                        PDF 가이드 다운로드
+                    </button>
+</div>
+<!-- Progress Circle -->
+<div class="bg-surface-container-lowest rounded-2xl p-8 flex flex-col items-center text-center shadow-sm border border-outline-variant/5">
+<div class="relative w-32 h-32 mb-4 flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-high" cx="64" cy="64" fill="transparent" r="58" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-secondary transition-all duration-1000" cx="64" cy="64" fill="transparent" r="58" stroke="currentColor" stroke-dasharray="364.4" stroke-dashoffset="236.8" stroke-width="8"></circle>
+</svg>
+<span class="absolute text-2xl font-bold text-on-surface font-headline">35%</span>
+</div>
+<p class="text-sm font-bold text-on-surface mb-1">거의 다 왔어요!</p>
+<p class="text-xs text-on-surface-variant mb-4">Unit 2 완료까지 약 45분이 더 필요합니다.</p>
+</div>
+</div>
+</div>
+</main>
+</body></html>
