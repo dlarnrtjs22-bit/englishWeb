@@ -9,8 +9,8 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
-    email: 'hong@example.com',
-    password: 'password123',
+    email: '',
+    password: '',
   });
 
   const redirectTo = (location.state as { from?: string } | null)?.from ?? '/dashboard';

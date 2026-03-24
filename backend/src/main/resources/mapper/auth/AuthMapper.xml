@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nativeflow.backend.auth.mapper.AuthMapper">
+
+    <sql id="userProfileColumns">
+        id::text as id,
+        name,
+        email,
+        role,
+        native_language,
+        target_language
+    </sql>
+
+    <select id="countByEmail" parameterType="string" resultType="int">
+        select count(*)
+        from users
+        where lower(email) = lower(#{email})
+    </select>
+
+    <select id="insertUser" resultType="string">
+        insert into users (
+            email,
+            password_hash,
+            auth_provider,
+            name,
+            role,
+            native_language,
+            target_language
+        ) values (
+            #{email},
+            #{passwordHash},
+            #{authProvider},
+            #{name},
+            #{role},
+            #{nativeLanguage},
+            #{targetLanguage}
+        )
+        returning id::text
+    </select>
+
+    <select id="findAuthUserByEmail" parameterType="string" resultType="com.nativeflow.backend.auth.model.AuthUserEntity">
+        select
+            id::text as id,
+            email,
+            password_hash,
+            name,
+            role,
+            native_language,
+            target_language
+        from users
+        where lower(email) = lower(#{email})
+        limit 1
+    </select>
+
+    <select id="findUserProfileById" parameterType="string" resultType="com.nativeflow.backend.auth.model.UserProfileEntity">
+        select
+            <include refid="userProfileColumns"/>
+        from users
+        where id = cast(#{userId} as uuid)
+        limit 1
+    </select>
+</mapper>

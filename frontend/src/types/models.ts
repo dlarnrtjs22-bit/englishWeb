@@ -5,11 +5,16 @@ export interface UserProfile {
   id: string;
   membershipLabel: string;
   name: string;
+  nativeLanguage?: string;
   role: 'admin' | 'user';
+  targetLanguage?: string;
 }
 
 export interface AuthResponse {
-  token: string;
+  accessToken: string;
+  expiresIn: number;
+  refreshToken: string;
+  tokenType: string;
   user: UserProfile;
 }
 

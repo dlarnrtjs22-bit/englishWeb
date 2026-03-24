@@ -1,6 +1,5 @@
-import { request } from './api';
-import { createSignupResponse, mockCurrentUser } from './mockData';
-import type { AuthResponse } from '../types/models';
+import { apiRequest } from './api';
+import type { AuthResponse, UserProfile } from '../types/models';
 
 export interface LoginPayload {
   email: string;
@@ -15,30 +14,24 @@ export interface SignupPayload {
 }
 
 export const authService = {
+  getMe() {
+    return apiRequest<UserProfile>('/auth/me', { method: 'GET' });
+  },
   login(payload: LoginPayload) {
-    return request<AuthResponse>(
-      '/auth/login',
-      {
-        body: JSON.stringify(payload),
-        method: 'POST',
-      },
-      async () => ({
-        token: 'mock-token',
-        user: {
-          ...mockCurrentUser,
-          email: payload.email,
-        },
-      }),
-    );
+    return apiRequest<AuthResponse>('/auth/login', {
+      body: JSON.stringify(payload),
+      method: 'POST',
+    });
+  },
+  logout() {
+    return apiRequest<{ success: boolean }>('/auth/logout', {
+      method: 'POST',
+    });
   },
   signup(payload: SignupPayload) {
-    return request<AuthResponse>(
-      '/auth/signup',
-      {
-        body: JSON.stringify(payload),
-        method: 'POST',
-      },
-      async () => createSignupResponse(payload),
-    );
+    return apiRequest<AuthResponse>('/auth/signup', {
+      body: JSON.stringify(payload),
+      method: 'POST',
+    });
   },
 };

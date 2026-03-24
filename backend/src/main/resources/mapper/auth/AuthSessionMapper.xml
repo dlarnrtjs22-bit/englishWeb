@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nativeflow.backend.auth.mapper.AuthSessionMapper">
+
+    <select id="insertSession" resultType="string">
+        insert into auth_sessions (
+            user_id,
+            refresh_token_hash,
+            device_name,
+            ip_address,
+            user_agent,
+            expires_at
+        ) values (
+            cast(#{userId} as uuid),
+            #{refreshTokenHash},
+            #{deviceName},
+            #{ipAddress},
+            #{userAgent},
+            #{expiresAt}
+        )
+        returning id::text
+    </select>
+
+    <select id="findActiveSessionById" parameterType="string" resultType="com.nativeflow.backend.auth.model.AuthSessionEntity">
+        select
+            id::text as id,
+            user_id::text as user_id,
+            refresh_token_hash,
+            is_active as active,
+            expires_at
+        from auth_sessions
+        where id = cast(#{sessionId} as uuid)
+          and is_active = true
+        limit 1
+    </select>
+
+    <update id="deactivateSession" parameterType="string">
+        update auth_sessions
+        set is_active = false,
+            updated_at = now()
+        where id = cast(#{sessionId} as uuid)
+          and is_active = true
+    </update>
+</mapper>

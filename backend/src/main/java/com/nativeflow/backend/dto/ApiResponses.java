@@ -7,10 +7,6 @@ public final class ApiResponses {
     private ApiResponses() {
     }
 
-    public record UserProfileDto(String id, String name, String email, String role, String membershipLabel) {}
-
-    public record AuthResponse(UserProfileDto user, String token) {}
-
     public record SeriesSummaryDto(
             String id,
             String title,

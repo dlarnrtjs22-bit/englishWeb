@@ -463,7 +463,10 @@ const settings: SettingsResponse = {
 
 export function createSignupResponse(payload: SignupResponsePayload): AuthResponse {
   return {
-    token: 'mock-signup-token',
+    accessToken: 'mock-access-token',
+    expiresIn: 3600,
+    refreshToken: 'mock-refresh-token',
+    tokenType: 'Bearer',
     user: {
       email: payload.email,
       id: 'user-new',

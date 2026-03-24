@@ -1,40 +1,11 @@
 package com.nativeflow.backend.service;
 
 import com.nativeflow.backend.dto.ApiResponses;
-import com.nativeflow.backend.dto.AuthRequests;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
 public class MockApiService {
-
-    private final ApiResponses.UserProfileDto currentUser = new ApiResponses.UserProfileDto(
-            "user-hong",
-            "홍길동",
-            "hong@example.com",
-            "user",
-            "Premium Member"
-    );
-
-    public ApiResponses.AuthResponse login(AuthRequests.LoginRequest request) {
-        return new ApiResponses.AuthResponse(
-                new ApiResponses.UserProfileDto(
-                        currentUser.id(),
-                        currentUser.name(),
-                        request.email(),
-                        currentUser.role(),
-                        currentUser.membershipLabel()
-                ),
-                "mock-token"
-        );
-    }
-
-    public ApiResponses.AuthResponse signup(AuthRequests.SignupRequest request) {
-        return new ApiResponses.AuthResponse(
-                new ApiResponses.UserProfileDto("user-new", request.name(), request.email(), "user", "Starter Member"),
-                "mock-signup-token"
-        );
-    }
 
     public ApiResponses.DashboardResponse getDashboard() {
         var series = getSeriesList();

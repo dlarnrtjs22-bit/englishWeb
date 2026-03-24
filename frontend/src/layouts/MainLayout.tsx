@@ -82,7 +82,7 @@ export function MainLayout() {
               <span className="material-symbols-outlined">account_circle</span>
               <span>{user?.name ?? '사용자'}</span>
             </button>
-            <button className="button ghost" onClick={logout} type="button">
+            <button className="button ghost" onClick={() => void logout()} type="button">
               로그아웃
             </button>
           </div>

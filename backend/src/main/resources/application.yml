@@ -17,6 +17,13 @@ spring:
   jackson:
     time-zone: Asia/Seoul
 
+mybatis:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.nativeflow.backend.auth.model
+  configuration:
+    map-underscore-to-camel-case: true
+    arg-name-based-constructor-auto-mapping: true
+
 server:
   port: 8080
 
@@ -28,3 +35,9 @@ app:
     user: postgres.fmqywfgjrktrfebgmfhg
     password: bnjrho12p!A
     pool-mode: session
+  auth:
+    jwt:
+      secret: nativeflow-internal-auth-secret-key-for-jwt-signing-change-before-production-2026
+      issuer: nativeflow
+      access-token-validity-seconds: 3600
+      refresh-token-validity-seconds: 604800

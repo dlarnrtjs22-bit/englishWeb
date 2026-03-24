@@ -8,70 +8,83 @@ import {
   type ReactNode,
 } from 'react';
 import { authService, type LoginPayload, type SignupPayload } from '../services/authService';
-import type { UserProfile } from '../types/models';
+import type { AuthResponse, UserProfile } from '../types/models';
+import {
+  clearStoredSession,
+  readStoredSession,
+  writeStoredSession,
+} from '../utils/sessionStorage';
 
 interface AuthContextValue {
   isAuthenticated: boolean;
-  user: UserProfile | null;
+  isInitializing: boolean;
   login: (payload: LoginPayload) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   signup: (payload: SignupPayload) => Promise<void>;
+  user: UserProfile | null;
 }
 
-const STORAGE_KEY = 'nativeflow-session';
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-function readStoredUser(): UserProfile | null {
-  const raw = localStorage.getItem(STORAGE_KEY);
-
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw) as UserProfile;
-  } catch {
-    localStorage.removeItem(STORAGE_KEY);
-    return null;
-  }
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    setUser(readStoredUser());
+    const bootstrap = async () => {
+      const storedSession = readStoredSession();
+
+      if (!storedSession) {
+        setIsInitializing(false);
+        return;
+      }
+
+      try {
+        const me = await authService.getMe();
+        setUser(me);
+      } catch {
+        clearStoredSession();
+        setUser(null);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    void bootstrap();
   }, []);
 
-  const syncUser = (nextUser: UserProfile | null) => {
-    if (nextUser) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-
+  const syncSession = (response: AuthResponse) => {
+    writeStoredSession(response);
     startTransition(() => {
-      setUser(nextUser);
+      setUser(response.user);
     });
   };
 
   const value = useMemo<AuthContextValue>(
     () => ({
       isAuthenticated: Boolean(user),
-      user,
+      isInitializing,
       async login(payload) {
         const response = await authService.login(payload);
-        syncUser(response.user);
+        syncSession(response);
       },
-      logout() {
-        syncUser(null);
+      async logout() {
+        try {
+          await authService.logout();
+        } finally {
+          clearStoredSession();
+          startTransition(() => {
+            setUser(null);
+          });
+        }
       },
       async signup(payload) {
         const response = await authService.signup(payload);
-        syncUser(response.user);
+        syncSession(response);
       },
+      user,
     }),
-    [user],
+    [isInitializing, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
