@@ -1,8 +1,10 @@
 import { ErrorPanel, LoadingPanel } from '../components/StatePanels';
+import { useAuth } from '../app/AuthContext';
 import { useRemoteData } from '../hooks/useRemoteData';
 import { contentService } from '../services/contentService';
 
 export function SettingsPage() {
+  const { user } = useAuth();
   const { data, error, loading, reload } = useRemoteData(() => contentService.getSettings(), []);
 
   if (loading) {
@@ -28,6 +30,24 @@ export function SettingsPage() {
           <h3>설정</h3>
         </div>
       </section>
+
+      {user?.subscriptionEndsAt ? (
+        <section className="content-card">
+          <div className="split-line">
+            <div>
+              <p className="eyebrow">Subscription</p>
+              <h3>구독 상태</h3>
+            </div>
+            <span>{user.membershipLabel}</span>
+          </div>
+          <p className="muted">
+            상태: {user.subscriptionStatus ?? 'active'} / 만료일: {new Date(user.subscriptionEndsAt).toLocaleDateString('ko-KR')}
+          </p>
+          <p className="muted">
+            남은 기간: {Math.max(0, Math.ceil((new Date(user.subscriptionEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}일
+          </p>
+        </section>
+      ) : null}
 
       <div className="settings-grid">
         <section className="content-card large-card">

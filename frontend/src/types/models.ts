@@ -7,6 +7,8 @@ export interface UserProfile {
   name: string;
   nativeLanguage?: string;
   role: 'admin' | 'user';
+  subscriptionEndsAt?: string;
+  subscriptionStatus?: string;
   targetLanguage?: string;
 }
 

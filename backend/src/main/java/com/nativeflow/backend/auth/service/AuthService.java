@@ -3,8 +3,10 @@ package com.nativeflow.backend.auth.service;
 import com.nativeflow.backend.auth.dto.AuthDtos;
 import com.nativeflow.backend.auth.mapper.AuthMapper;
 import com.nativeflow.backend.auth.mapper.AuthSessionMapper;
+import com.nativeflow.backend.auth.mapper.SubscriptionMapper;
 import com.nativeflow.backend.auth.model.AuthSessionEntity;
 import com.nativeflow.backend.auth.model.AuthUserEntity;
+import com.nativeflow.backend.auth.model.SubscriptionAccessEntity;
 import com.nativeflow.backend.auth.model.UserProfileEntity;
 import com.nativeflow.backend.common.exception.ApiException;
 import com.nativeflow.backend.common.exception.ErrorCode;
@@ -14,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HexFormat;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -28,20 +31,24 @@ public class AuthService {
     private static final Pattern PASSWORD_POLICY = Pattern.compile(
             "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z\\d]).{8,}$"
     );
+    private static final String DEFAULT_PLAN_CODE = "standard-monthly";
 
     private final AuthMapper authMapper;
     private final AuthSessionMapper authSessionMapper;
+    private final SubscriptionMapper subscriptionMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
     public AuthService(
             AuthMapper authMapper,
             AuthSessionMapper authSessionMapper,
+            SubscriptionMapper subscriptionMapper,
             PasswordEncoder passwordEncoder,
             JwtTokenProvider jwtTokenProvider
     ) {
         this.authMapper = authMapper;
         this.authSessionMapper = authSessionMapper;
+        this.subscriptionMapper = subscriptionMapper;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
     }
@@ -68,8 +75,13 @@ public class AuthService {
                 normalizedTargetLanguage
         );
 
+        OffsetDateTime periodStart = OffsetDateTime.now();
+        OffsetDateTime periodEnd = periodStart.plusMonths(1);
+        subscriptionMapper.insertUserSubscription(userId, DEFAULT_PLAN_CODE, "trialing", periodStart, periodEnd);
+
         UserProfileEntity profile = requireUserProfile(userId);
-        return issueTokens(profile, metadata);
+        SubscriptionAccessEntity subscription = requireAccessibleSubscription(userId);
+        return issueTokens(profile, subscription, metadata);
     }
 
     @Transactional
@@ -82,11 +94,14 @@ public class AuthService {
         }
 
         UserProfileEntity profile = requireUserProfile(authUser.getId());
-        return issueTokens(profile, metadata);
+        SubscriptionAccessEntity subscription = requireAccessibleSubscription(authUser.getId());
+        return issueTokens(profile, subscription, metadata);
     }
 
     public AuthDtos.UserProfileResponse me(String userId) {
-        return toProfileResponse(requireUserProfile(userId));
+        UserProfileEntity profile = requireUserProfile(userId);
+        SubscriptionAccessEntity subscription = requireAccessibleSubscription(userId);
+        return toProfileResponse(profile, subscription);
     }
 
     @Transactional
@@ -106,7 +121,11 @@ public class AuthService {
         return session;
     }
 
-    private AuthDtos.AuthResponse issueTokens(UserProfileEntity profile, ClientRequestMetadata metadata) {
+    private AuthDtos.AuthResponse issueTokens(
+            UserProfileEntity profile,
+            SubscriptionAccessEntity subscription,
+            ClientRequestMetadata metadata
+    ) {
         String refreshToken = generateRefreshToken();
         String sessionId = authSessionMapper.insertSession(
                 profile.getId(),
@@ -125,7 +144,7 @@ public class AuthService {
         );
 
         return new AuthDtos.AuthResponse(
-                toProfileResponse(profile),
+                toProfileResponse(profile, subscription),
                 accessToken,
                 refreshToken,
                 "Bearer",
@@ -143,15 +162,34 @@ public class AuthService {
         return profile;
     }
 
-    private AuthDtos.UserProfileResponse toProfileResponse(UserProfileEntity profile) {
+    private SubscriptionAccessEntity requireAccessibleSubscription(String userId) {
+        SubscriptionAccessEntity subscription = subscriptionMapper.findAccessibleSubscription(userId);
+
+        if (subscription == null) {
+            throw new ApiException(
+                    ErrorCode.UNAUTHORIZED,
+                    HttpStatus.UNAUTHORIZED,
+                    "활성 구독이 없어 로그인할 수 없습니다."
+            );
+        }
+
+        return subscription;
+    }
+
+    private AuthDtos.UserProfileResponse toProfileResponse(
+            UserProfileEntity profile,
+            SubscriptionAccessEntity subscription
+    ) {
         return new AuthDtos.UserProfileResponse(
                 profile.getId(),
                 profile.getName(),
                 profile.getEmail(),
                 profile.getRole(),
-                "Premium Member",
+                subscription.getPlanName(),
                 profile.getNativeLanguage(),
-                profile.getTargetLanguage()
+                profile.getTargetLanguage(),
+                subscription.getStatus(),
+                subscription.getCurrentPeriodEnd().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
         );
     }
 

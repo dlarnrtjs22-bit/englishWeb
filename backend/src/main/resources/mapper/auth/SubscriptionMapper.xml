@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nativeflow.backend.auth.mapper.SubscriptionMapper">
+
+    <select id="insertUserSubscription" resultType="string">
+        insert into user_subscriptions (
+            user_id,
+            plan_id,
+            status,
+            current_period_start,
+            current_period_end,
+            started_at
+        ) values (
+            cast(#{userId} as uuid),
+            (select id from subscription_plans where code = #{planCode} limit 1),
+            #{status},
+            #{currentPeriodStart},
+            #{currentPeriodEnd},
+            #{currentPeriodStart}
+        )
+        returning id::text
+    </select>
+
+    <select id="findAccessibleSubscription" parameterType="string" resultType="com.nativeflow.backend.auth.model.SubscriptionAccessEntity">
+        select
+            us.id::text as id,
+            us.user_id::text as user_id,
+            sp.name as plan_name,
+            us.status as status,
+            us.current_period_end as current_period_end
+        from user_subscriptions us
+        join subscription_plans sp on sp.id = us.plan_id
+        where us.user_id = cast(#{userId} as uuid)
+          and us.status in ('trialing', 'active')
+          and us.current_period_end >= now()
+        order by us.current_period_end desc
+        limit 1
+    </select>
+</mapper>

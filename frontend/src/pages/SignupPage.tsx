@@ -1,6 +1,7 @@
 import { startTransition, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../app/AuthContext';
+import { isStrongPassword, isValidEmail } from '../utils/validation';
 
 export function SignupPage() {
   const { signup } = useAuth();
@@ -16,11 +17,32 @@ export function SignupPage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setIsSubmitting(true);
     setError('');
 
+    if (!form.name.trim()) {
+      setError('이름을 입력해주세요.');
+      return;
+    }
+
+    if (!isValidEmail(form.email)) {
+      setError('올바른 이메일 형식이 아닙니다.');
+      return;
+    }
+
+    if (!isStrongPassword(form.password)) {
+      setError('비밀번호는 8자 이상이며 영문 대문자, 소문자, 숫자, 특수문자를 모두 포함해야 합니다.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
-      await signup(form);
+      await signup({
+        email: form.email.trim(),
+        name: form.name.trim(),
+        password: form.password,
+        targetLanguage: form.targetLanguage,
+      });
       startTransition(() => navigate('/dashboard', { replace: true }));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '회원가입에 실패했습니다.');
@@ -33,11 +55,8 @@ export function SignupPage() {
     <div className="auth-shell reverse">
       <section className="auth-panel">
         <p className="eyebrow">Create Account</p>
-        <h2>프리미엄 학습 공간 시작하기</h2>
-        <p className="muted">
-          지금은 DB 없이 목업으로 연결되어 있지만, 실제 가입 플로우로 이어질 수 있게 구조를
-          잡아두었습니다.
-        </p>
+        <h2>회원가입</h2>
+        <p className="muted">가입 즉시 월 구독 기준 계정 구조로 연결되도록 준비합니다.</p>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <label>
@@ -66,7 +85,7 @@ export function SignupPage() {
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, password: event.target.value }))
               }
-              placeholder="8자 이상 입력"
+              placeholder="예: Password1!"
               type="password"
               value={form.password}
             />
@@ -101,23 +120,22 @@ export function SignupPage() {
 
       <section className="auth-hero">
         <p className="eyebrow">NativeFlow</p>
-        <h1>시리즈를 구독하고, 복습 큐로 계속 기억하게 만듭니다.</h1>
+        <h1>회원가입 후 구독 상태와 남은 기간을 기준으로 접근 권한을 관리합니다.</h1>
         <p>
-          지금 초안에서는 한국어 기반 UX, 학습 카드, 복습 흐름, 설정 화면까지 한 번에 확인할 수
-          있습니다.
+          월 구독 구조를 기준으로 인증, 세션, 구독 기간 정보가 함께 움직이도록 설계했습니다.
         </p>
         <div className="stat-strip">
           <article>
-            <strong>24</strong>
-            <span>오늘 복습 예정</span>
+            <strong>JWT</strong>
+            <span>액세스 토큰</span>
           </article>
           <article>
-            <strong>12일</strong>
-            <span>연속 학습</span>
+            <strong>Session</strong>
+            <span>DB 세션 관리</span>
           </article>
           <article>
-            <strong>1,204</strong>
-            <span>누적 표현</span>
+            <strong>Monthly</strong>
+            <span>월 구독 기준</span>
           </article>
         </div>
       </section>
