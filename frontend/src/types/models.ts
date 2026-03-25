@@ -99,6 +99,26 @@ export interface LearningItemResponse {
   targetText: string;
 }
 
+export interface CheckAnswerResponse {
+  acceptedAnswers: string[];
+  correctAnswer: string;
+  exampleSentence: string;
+  isCorrect: boolean;
+}
+
+export interface FavoriteToggleResponse {
+  isFavorited: boolean;
+  success: boolean;
+}
+
+export interface ReviewScheduleResponse {
+  easeFactor: number;
+  intervalDays: number;
+  nextReviewAt: string;
+  result: ReviewResult;
+  success: boolean;
+}
+
 export interface FavoriteItem {
   itemId: string;
   packTitle: string;
@@ -162,4 +182,41 @@ export interface SettingsResponse {
     email: string;
     name: string;
   };
+}
+
+export interface UpdateSettingsPayload {
+  notifications: {
+    dailyReminderEnabled: boolean;
+    newContentEnabled: boolean;
+    reviewDueEnabled: boolean;
+  };
+  preference: {
+    dailyGoal: number;
+    interfaceLanguage: string;
+    level: 'advanced' | 'beginner' | 'intermediate';
+    targetLanguage: string;
+  };
+  profile: {
+    bio: string;
+    name: string;
+  };
+}
+
+export interface MySubscriptionResponse {
+  cancelAtPeriodEnd: boolean;
+  currentPeriodEnd: string;
+  currentPeriodStart: string;
+  daysRemaining: number;
+  planName: string;
+  status: string;
+}
+
+export interface BillingTransactionResponse {
+  amount: string;
+  currency: string;
+  id: string;
+  paidAt: string | null;
+  provider: string;
+  providerOrderId: string | null;
+  status: string;
 }

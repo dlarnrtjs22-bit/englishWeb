@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ErrorPanel, LoadingPanel } from '../components/StatePanels';
 import { useRemoteData } from '../hooks/useRemoteData';
 import { contentService } from '../services/contentService';
-import type { ReviewResult } from '../types/models';
+import type { CheckAnswerResponse, ReviewResult } from '../types/models';
 
 const reviewOptions: Array<{ label: string; result: ReviewResult; subtitle: string }> = [
   { label: '다시', result: 'again', subtitle: '1일' },
@@ -19,15 +19,11 @@ export function LearningPage() {
     [itemId],
   );
   const [answer, setAnswer] = useState('');
-  const [revealed, setRevealed] = useState(false);
+  const [answerResult, setAnswerResult] = useState<CheckAnswerResponse | null>(null);
   const [sentence, setSentence] = useState('');
   const [favorite, setFavorite] = useState(false);
+  const [message, setMessage] = useState('');
   const [reviewResult, setReviewResult] = useState<ReviewResult | null>(null);
-
-  const isCorrect = useMemo(() => {
-    const normalizedAnswer = answer.trim().toLowerCase();
-    return normalizedAnswer.length > 0 && normalizedAnswer === data?.targetText.toLowerCase();
-  }, [answer, data?.targetText]);
 
   if (loading) {
     return <LoadingPanel message="학습 카드를 준비하고 있습니다." />;
@@ -44,8 +40,14 @@ export function LearningPage() {
     );
   }
 
-  const handleReveal = () => {
-    setRevealed(true);
+  const handleReveal = async () => {
+    try {
+      const response = await contentService.checkAnswer(itemId, answer);
+      setAnswerResult(response);
+      setMessage(response.isCorrect ? '정답입니다.' : '오답입니다. 정답을 확인해보세요.');
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : '정답 확인에 실패했습니다.');
+    }
   };
 
   const handleSpeak = () => {
@@ -53,6 +55,28 @@ export function LearningPage() {
     utterance.lang = 'en-US';
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
+  };
+
+  const handleFavorite = async () => {
+    try {
+      const response = favorite
+        ? await contentService.unfavoriteItem(itemId)
+        : await contentService.favoriteItem(itemId);
+      setFavorite(response.isFavorited);
+      setMessage(response.isFavorited ? '즐겨찾기에 저장했습니다.' : '즐겨찾기에서 제거했습니다.');
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : '즐겨찾기 처리에 실패했습니다.');
+    }
+  };
+
+  const handleReview = async (result: ReviewResult) => {
+    try {
+      const response = await contentService.submitReview(itemId, result);
+      setReviewResult(result);
+      setMessage(`복습 결과가 저장되었습니다. 다음 복습은 ${new Date(response.nextReviewAt).toLocaleDateString('ko-KR')} 입니다.`);
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : '복습 저장에 실패했습니다.');
+    }
   };
 
   return (
@@ -96,24 +120,24 @@ export function LearningPage() {
         </label>
 
         <div className="actions-row">
-          <button className="button primary" onClick={handleReveal} type="button">
+          <button className="button primary" onClick={() => void handleReveal()} type="button">
             정답 확인
           </button>
           <button
             className={`icon-button bordered${favorite ? ' active' : ''}`}
-            onClick={() => setFavorite((prev) => !prev)}
+            onClick={() => void handleFavorite()}
             type="button"
           >
             <span className="material-symbols-outlined">bookmark</span>
           </button>
         </div>
 
-        {revealed ? (
-          <section className={`answer-panel${isCorrect ? ' success' : ''}`}>
+        {answerResult ? (
+          <section className={`answer-panel${answerResult.isCorrect ? ' success' : ''}`}>
             <div>
               <p className="eyebrow">Answer</p>
-              <h3>{data.targetText}</h3>
-              <p>{isCorrect ? '정답입니다. 표현 감각이 좋습니다.' : data.exampleSentence}</p>
+              <h3>{answerResult.correctAnswer}</h3>
+              <p>{answerResult.isCorrect ? '정답입니다. 표현 감각이 좋습니다.' : answerResult.exampleSentence}</p>
             </div>
             <button className="icon-button" onClick={handleSpeak} type="button">
               <span className="material-symbols-outlined">volume_up</span>
@@ -148,19 +172,21 @@ export function LearningPage() {
               <p>
                 {sentence.trim().length > 0
                   ? data.aiFeedback
-                  : '문장을 입력하면 AI 첨삭 결과가 이 영역에 표시되도록 구조를 잡아두었습니다.'}
+                  : '문장을 입력하면 다음 단계에서 실제 첨삭 API와 연결할 수 있도록 구조를 유지해두었습니다.'}
               </p>
             </div>
           </div>
         </section>
       </section>
 
+      {message ? <p className="muted">{message}</p> : null}
+
       <footer className="review-action-bar">
         {reviewOptions.map((option) => (
           <button
             className={`review-pill${reviewResult === option.result ? ' active' : ''}`}
             key={option.result}
-            onClick={() => setReviewResult(option.result)}
+            onClick={() => void handleReview(option.result)}
             type="button"
           >
             <strong>{option.label}</strong>

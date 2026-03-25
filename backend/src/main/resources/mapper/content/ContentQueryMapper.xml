@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nativeflow.backend.content.mapper.ContentQueryMapper">
+
+    <select id="findSeriesCards" resultType="com.nativeflow.backend.content.model.SeriesCardRow">
+        select
+            s.id::text as id,
+            s.title,
+            s.description,
+            s.category as category_label,
+            s.thumbnail_url as thumbnail_url,
+            coalesce(
+                cast(round((sp.learned_items::numeric / nullif(sp.total_items, 0)) * 100) as integer),
+                0
+            ) as progress,
+            (select count(*) from packs p where p.series_id = s.id and p.is_published = true) as pack_count,
+            exists(
+                select 1
+                from series_subscriptions ss
+                where ss.user_id = cast(#{userId} as uuid)
+                  and ss.series_id = s.id
+                  and ss.status = 'active'
+            ) as subscribed
+        from series s
+        left join series_progress sp
+            on sp.user_id = cast(#{userId} as uuid)
+           and sp.series_id = s.id
+        where s.is_published = true
+        order by s.created_at asc
+    </select>
+
+    <select id="findSubscribedSeriesCards" resultType="com.nativeflow.backend.content.model.SeriesCardRow">
+        select
+            s.id::text as id,
+            s.title,
+            s.description,
+            s.category as category_label,
+            s.thumbnail_url as thumbnail_url,
+            coalesce(
+                cast(round((sp.learned_items::numeric / nullif(sp.total_items, 0)) * 100) as integer),
+                0
+            ) as progress,
+            (select count(*) from packs p where p.series_id = s.id and p.is_published = true) as pack_count,
+            true as subscribed
+        from series_subscriptions ss
+        join series s on s.id = ss.series_id
+        left join series_progress sp
+            on sp.user_id = cast(#{userId} as uuid)
+           and sp.series_id = s.id
+        where ss.user_id = cast(#{userId} as uuid)
+          and ss.status = 'active'
+          and s.is_published = true
+        order by ss.subscribed_at desc
+    </select>
+
+    <select id="findSeriesDetail" resultType="com.nativeflow.backend.content.model.SeriesDetailRow">
+        select
+            s.id::text as id,
+            s.title,
+            s.description,
+            s.category as category_label,
+            s.thumbnail_url as thumbnail_url,
+            coalesce(
+                cast(round((sp.learned_items::numeric / nullif(sp.total_items, 0)) * 100) as integer),
+                0
+            ) as progress
+        from series s
+        left join series_progress sp
+            on sp.user_id = cast(#{userId} as uuid)
+           and sp.series_id = s.id
+        where s.id = cast(#{seriesId} as uuid)
+          and s.is_published = true
+        limit 1
+    </select>
+
+    <select id="findSeriesPacks" resultType="com.nativeflow.backend.content.model.SeriesPackRow">
+        select
+            p.id::text as id,
+            p.title,
+            p.description,
+            p.order_index,
+            (select count(*) from learning_items li where li.pack_id = p.id and li.is_published = true) as item_count
+        from packs p
+        where p.series_id = cast(#{seriesId} as uuid)
+          and p.is_published = true
+        order by p.order_index asc
+    </select>
+
+    <select id="findFirstLearningItemIdByPackId" resultType="string">
+        select li.id::text
+        from learning_items li
+        where li.pack_id = cast(#{packId} as uuid)
+          and li.is_published = true
+        order by li.order_index asc
+        limit 1
+    </select>
+
+    <select id="findLearningItem" resultType="com.nativeflow.backend.content.model.LearningItemRow">
+        select
+            li.id::text as id,
+            li.source_text,
+            li.target_text,
+            li.nuance_note,
+            li.example_sentence,
+            li.order_index as current,
+            (select count(*) from learning_items same_pack where same_pack.pack_id = li.pack_id and same_pack.is_published = true) as total
+        from learning_items li
+        where li.id = cast(#{itemId} as uuid)
+          and li.is_published = true
+        limit 1
+    </select>
+
+    <select id="findFavorites" resultType="com.nativeflow.backend.content.model.FavoriteRow">
+        select
+            li.id::text as item_id,
+            li.source_text,
+            li.target_text,
+            s.title as series_title,
+            p.title as pack_title
+        from favorites f
+        join learning_items li on li.id = f.learning_item_id
+        join packs p on p.id = li.pack_id
+        join series s on s.id = p.series_id
+        where f.user_id = cast(#{userId} as uuid)
+        order by f.created_at desc
+    </select>
+
+    <select id="findDueReviewItems" resultType="com.nativeflow.backend.content.model.ReviewQueueRow">
+        select
+            li.id::text as item_id,
+            li.source_text,
+            s.title as series_title,
+            li.example_sentence as context_text
+        from review_schedules rs
+        join learning_items li on li.id = rs.learning_item_id
+        join packs p on p.id = li.pack_id
+        join series s on s.id = p.series_id
+        where rs.user_id = cast(#{userId} as uuid)
+          and rs.next_review_at is not null
+          and rs.next_review_at &lt;= now()
+        order by rs.next_review_at asc
+    </select>
+
+    <select id="findDashboardStats" resultType="com.nativeflow.backend.content.model.DashboardStatsRow">
+        select
+            (select count(*)
+             from review_schedules rs
+             where rs.user_id = cast(#{userId} as uuid)
+               and rs.next_review_at is not null
+               and rs.next_review_at &lt;= now()) as due_count,
+            (select count(distinct ua.learning_item_id)
+             from user_answers ua
+             where ua.user_id = cast(#{userId} as uuid)
+               and coalesce(ua.is_correct, false) = true) as reviewed_distinct_count
+    </select>
+
+    <select id="findReviewHistory" resultType="com.nativeflow.backend.content.model.ReviewHistoryRow">
+        select
+            to_char(day_series.day, 'DY') as day_label,
+            coalesce(count(rl.id), 0) as review_count
+        from (
+            select generate_series(current_date - interval '6 day', current_date, interval '1 day')::date as day
+        ) day_series
+        left join review_logs rl
+            on rl.user_id = cast(#{userId} as uuid)
+           and rl.reviewed_at::date = day_series.day
+        group by day_series.day
+        order by day_series.day asc
+    </select>
+</mapper>

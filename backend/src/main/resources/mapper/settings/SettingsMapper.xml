@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nativeflow.backend.settings.mapper.SettingsMapper">
+
+    <insert id="insertDefaultPreferences">
+        insert into user_preferences (
+            user_id,
+            level,
+            daily_goal,
+            interface_language,
+            bio
+        ) values (
+            cast(#{userId} as uuid),
+            'intermediate',
+            20,
+            'ko',
+            null
+        )
+        on conflict (user_id) do nothing
+    </insert>
+
+    <insert id="insertDefaultNotificationSettings">
+        insert into user_notification_settings (
+            user_id,
+            daily_reminder_enabled,
+            new_content_enabled,
+            review_due_enabled
+        ) values (
+            cast(#{userId} as uuid),
+            true,
+            true,
+            true
+        )
+        on conflict (user_id) do nothing
+    </insert>
+
+    <select id="findPreferenceByUserId" resultType="com.nativeflow.backend.settings.model.UserPreferenceEntity">
+        select
+            user_id::text as user_id,
+            level,
+            daily_goal,
+            interface_language,
+            bio
+        from user_preferences
+        where user_id = cast(#{userId} as uuid)
+        limit 1
+    </select>
+
+    <select id="findNotificationSettingByUserId" resultType="com.nativeflow.backend.settings.model.UserNotificationSettingEntity">
+        select
+            user_id::text as user_id,
+            daily_reminder_enabled,
+            new_content_enabled,
+            review_due_enabled
+        from user_notification_settings
+        where user_id = cast(#{userId} as uuid)
+        limit 1
+    </select>
+
+    <update id="updateUserProfile">
+        update users
+        set
+            name = #{name},
+            target_language = #{targetLanguage},
+            updated_at = now()
+        where id = cast(#{userId} as uuid)
+    </update>
+
+    <update id="updateUserPreference">
+        update user_preferences
+        set
+            level = #{level},
+            daily_goal = #{dailyGoal},
+            interface_language = #{interfaceLanguage},
+            bio = #{bio},
+            updated_at = now()
+        where user_id = cast(#{userId} as uuid)
+    </update>
+
+    <update id="updateNotificationSetting">
+        update user_notification_settings
+        set
+            daily_reminder_enabled = #{dailyReminderEnabled},
+            new_content_enabled = #{newContentEnabled},
+            review_due_enabled = #{reviewDueEnabled},
+            updated_at = now()
+        where user_id = cast(#{userId} as uuid)
+    </update>
+
+    <select id="findProfileByUserId" resultType="com.nativeflow.backend.auth.model.UserProfileEntity">
+        select
+            id::text as id,
+            name,
+            email,
+            role,
+            native_language,
+            target_language
+        from users
+        where id = cast(#{userId} as uuid)
+        limit 1
+    </select>
+</mapper>

@@ -79,6 +79,15 @@ public final class ApiResponses {
 
     public record FavoritesResponse(List<FavoriteItemDto> items) {}
 
+    public record FavoriteToggleResponse(boolean success, boolean isFavorited) {}
+
+    public record CheckAnswerResponse(
+            boolean isCorrect,
+            String correctAnswer,
+            List<String> acceptedAnswers,
+            String exampleSentence
+    ) {}
+
     public record ReviewItemDto(String itemId, String sourceText, String contextText, Integer level) {}
 
     public record ReviewGroupDto(String seriesId, String seriesTitle, String description, List<ReviewItemDto> items) {}
@@ -90,6 +99,14 @@ public final class ApiResponses {
             List<ReviewGroupDto> groups,
             List<ReviewSummaryCardDto> summaryCards,
             List<Integer> weeklyHistory
+    ) {}
+
+    public record ReviewScheduleResponse(
+            boolean success,
+            String result,
+            int intervalDays,
+            double easeFactor,
+            String nextReviewAt
     ) {}
 
     public record SettingsProfileDto(String name, String email, String bio) {}

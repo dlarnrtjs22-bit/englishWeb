@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nativeflow.backend.content.mapper.ContentCommandMapper">
+
+    <select id="findSeriesIdBySlug" resultType="string">
+        select id::text
+        from series
+        where slug = #{slug}
+        limit 1
+    </select>
+
+    <insert id="subscribeSeries">
+        insert into series_subscriptions (user_id, series_id, status)
+        values (cast(#{userId} as uuid), cast(#{seriesId} as uuid), 'active')
+        on conflict (user_id, series_id) do update
+        set status = 'active'
+    </insert>
+
+    <insert id="ensureSeriesProgress">
+        insert into series_progress (user_id, series_id, total_items, learned_items, due_items)
+        values (
+            cast(#{userId} as uuid),
+            cast(#{seriesId} as uuid),
+            (
+                select count(*)
+                from learning_items li
+                join packs p on p.id = li.pack_id
+                where p.series_id = cast(#{seriesId} as uuid)
+                  and li.is_published = true
+            ),
+            0,
+            0
+        )
+        on conflict (user_id, series_id) do nothing
+    </insert>
+
+    <select id="findAcceptedAnswers" resultType="string">
+        select unnest(
+            case
+                when cardinality(accepted_answers) = 0 then array[target_text]
+                else accepted_answers
+            end
+        )
+        from learning_items
+        where id = cast(#{itemId} as uuid)
+    </select>
+
+    <select id="findTargetText" resultType="string">
+        select target_text
+        from learning_items
+        where id = cast(#{itemId} as uuid)
+        limit 1
+    </select>
+
+    <insert id="insertUserAnswer">
+        insert into user_answers (
+            user_id,
+            learning_item_id,
+            typed_answer,
+            normalized_answer,
+            is_correct
+        ) values (
+            cast(#{userId} as uuid),
+            cast(#{itemId} as uuid),
+            #{typedAnswer},
+            #{normalizedAnswer},
+            #{isCorrect}
+        )
+    </insert>
+
+    <insert id="favoriteItem">
+        insert into favorites (user_id, learning_item_id)
+        values (cast(#{userId} as uuid), cast(#{itemId} as uuid))
+        on conflict (user_id, learning_item_id) do nothing
+    </insert>
+
+    <delete id="unfavoriteItem">
+        delete from favorites
+        where user_id = cast(#{userId} as uuid)
+          and learning_item_id = cast(#{itemId} as uuid)
+    </delete>
+
+    <insert id="upsertReviewSchedule">
+        insert into review_schedules (
+            user_id,
+            learning_item_id,
+            ease_factor,
+            interval_days,
+            repetition_count,
+            next_review_at,
+            last_reviewed_at,
+            last_result
+        ) values (
+            cast(#{userId} as uuid),
+            cast(#{itemId} as uuid),
+            #{easeFactor},
+            #{intervalDays},
+            #{repetitionCount},
+            #{nextReviewAt},
+            now(),
+            #{lastResult}
+        )
+        on conflict (user_id, learning_item_id) do update
+        set ease_factor = excluded.ease_factor,
+            interval_days = excluded.interval_days,
+            repetition_count = excluded.repetition_count,
+            next_review_at = excluded.next_review_at,
+            last_reviewed_at = now(),
+            last_result = excluded.last_result,
+            updated_at = now()
+    </insert>
+
+    <insert id="insertReviewLog">
+        insert into review_logs (
+            user_id,
+            learning_item_id,
+            result,
+            new_interval_days,
+            new_ease_factor
+        ) values (
+            cast(#{userId} as uuid),
+            cast(#{itemId} as uuid),
+            #{result},
+            #{newIntervalDays},
+            #{newEaseFactor}
+        )
+    </insert>
+
+    <update id="updateSeriesProgressCounts">
+        update series_progress sp
+        set
+            total_items = (
+                select count(*)
+                from learning_items li
+                join packs p on p.id = li.pack_id
+                where p.series_id = cast(#{seriesId} as uuid)
+                  and li.is_published = true
+            ),
+            learned_items = (
+                select count(distinct ua.learning_item_id)
+                from user_answers ua
+                join learning_items li on li.id = ua.learning_item_id
+                join packs p on p.id = li.pack_id
+                where ua.user_id = cast(#{userId} as uuid)
+                  and p.series_id = cast(#{seriesId} as uuid)
+                  and coalesce(ua.is_correct, false) = true
+            ),
+            due_items = (
+                select count(*)
+                from review_schedules rs
+                join learning_items li on li.id = rs.learning_item_id
+                join packs p on p.id = li.pack_id
+                where rs.user_id = cast(#{userId} as uuid)
+                  and p.series_id = cast(#{seriesId} as uuid)
+                  and rs.next_review_at is not null
+                  and rs.next_review_at &lt;= now()
+            ),
+            updated_at = now()
+        where sp.user_id = cast(#{userId} as uuid)
+          and sp.series_id = cast(#{seriesId} as uuid)
+    </update>
+
+    <select id="findSeriesIdByLearningItem" resultType="string">
+        select s.id::text
+        from learning_items li
+        join packs p on p.id = li.pack_id
+        join series s on s.id = p.series_id
+        where li.id = cast(#{itemId} as uuid)
+        limit 1
+    </select>
+</mapper>

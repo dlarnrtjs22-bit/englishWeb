@@ -34,13 +34,14 @@ public class AuthInterceptor implements HandlerInterceptor {
         Claims claims = jwtTokenProvider.parse(token);
         String userId = claims.getSubject();
         String sessionId = claims.get("sid", String.class);
+        String name = claims.get("name", String.class);
         String email = claims.get("email", String.class);
         String role = claims.get("role", String.class);
 
         AuthSessionEntity session = authService.requireActiveSession(sessionId, userId);
         request.setAttribute(
                 CurrentUserArgumentResolver.CURRENT_USER_ATTRIBUTE,
-                new AuthenticatedUser(session.getUserId(), session.getId(), email, role)
+                new AuthenticatedUser(session.getUserId(), session.getId(), name, email, role)
         );
         return true;
     }

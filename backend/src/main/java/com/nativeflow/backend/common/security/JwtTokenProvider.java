@@ -24,7 +24,7 @@ public class JwtTokenProvider {
         this.secretKey = Keys.hmacShaKeyFor(jwtProperties.secret().getBytes(StandardCharsets.UTF_8));
     }
 
-    public String createAccessToken(String userId, String sessionId, String email, String role) {
+    public String createAccessToken(String userId, String sessionId, String name, String email, String role) {
         Instant now = Instant.now();
         Instant expiry = now.plusSeconds(jwtProperties.accessTokenValiditySeconds());
 
@@ -34,6 +34,7 @@ public class JwtTokenProvider {
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiry))
                 .claim("sid", sessionId)
+                .claim("name", name)
                 .claim("email", email)
                 .claim("role", role)
                 .signWith(secretKey)

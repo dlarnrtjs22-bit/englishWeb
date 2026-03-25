@@ -1,55 +1,94 @@
 package com.nativeflow.backend.controller;
 
+import com.nativeflow.backend.common.security.AuthenticatedUser;
+import com.nativeflow.backend.common.security.CurrentUser;
+import com.nativeflow.backend.content.dto.ContentActionDtos;
+import com.nativeflow.backend.content.service.ContentService;
 import com.nativeflow.backend.dto.ApiResponses;
-import com.nativeflow.backend.service.MockApiService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1")
 public class ContentController {
 
-    private final MockApiService mockApiService;
+    private final ContentService contentService;
 
-    public ContentController(MockApiService mockApiService) {
-        this.mockApiService = mockApiService;
+    public ContentController(ContentService contentService) {
+        this.contentService = contentService;
     }
 
     @GetMapping("/dashboard")
-    public ApiResponses.DashboardResponse dashboard() {
-        return mockApiService.getDashboard();
+    public ApiResponses.DashboardResponse dashboard(@CurrentUser AuthenticatedUser authenticatedUser) {
+        return contentService.getDashboard(authenticatedUser.userId(), authenticatedUser.name());
     }
 
     @GetMapping("/series")
-    public List<ApiResponses.SeriesSummaryDto> series() {
-        return mockApiService.getSeriesList();
+    public List<ApiResponses.SeriesSummaryDto> series(@CurrentUser AuthenticatedUser authenticatedUser) {
+        return contentService.getSeriesCards(authenticatedUser.userId());
     }
 
     @GetMapping("/series/{seriesId}")
-    public ApiResponses.SeriesDetailResponse seriesDetail(@PathVariable String seriesId) {
-        return mockApiService.getSeriesDetail(seriesId);
+    public ApiResponses.SeriesDetailResponse seriesDetail(
+            @CurrentUser AuthenticatedUser authenticatedUser,
+            @PathVariable String seriesId
+    ) {
+        return contentService.getSeriesDetail(authenticatedUser.userId(), seriesId);
     }
 
     @GetMapping("/learning-items/{itemId}")
     public ApiResponses.LearningItemResponse learningItem(@PathVariable String itemId) {
-        return mockApiService.getLearningItem(itemId);
+        return contentService.getLearningItem(itemId);
+    }
+
+    @PostMapping("/learning-items/{itemId}/check-answer")
+    public ApiResponses.CheckAnswerResponse checkAnswer(
+            @CurrentUser AuthenticatedUser authenticatedUser,
+            @PathVariable String itemId,
+            @Valid @RequestBody ContentActionDtos.CheckAnswerRequest request
+    ) {
+        return contentService.checkAnswer(authenticatedUser.userId(), itemId, request.typedAnswer());
+    }
+
+    @PostMapping("/learning-items/{itemId}/favorite")
+    public ApiResponses.FavoriteToggleResponse favorite(
+            @CurrentUser AuthenticatedUser authenticatedUser,
+            @PathVariable String itemId
+    ) {
+        return contentService.favoriteItem(authenticatedUser.userId(), itemId);
+    }
+
+    @DeleteMapping("/learning-items/{itemId}/favorite")
+    public ApiResponses.FavoriteToggleResponse unfavorite(
+            @CurrentUser AuthenticatedUser authenticatedUser,
+            @PathVariable String itemId
+    ) {
+        return contentService.unfavoriteItem(authenticatedUser.userId(), itemId);
+    }
+
+    @PostMapping("/learning-items/{itemId}/review")
+    public ApiResponses.ReviewScheduleResponse submitReview(
+            @CurrentUser AuthenticatedUser authenticatedUser,
+            @PathVariable String itemId,
+            @Valid @RequestBody ContentActionDtos.ReviewRequest request
+    ) {
+        return contentService.submitReview(authenticatedUser.userId(), itemId, request.result());
     }
 
     @GetMapping("/reviews/queue")
-    public ApiResponses.ReviewQueueResponse reviewQueue() {
-        return mockApiService.getReviewQueue();
+    public ApiResponses.ReviewQueueResponse reviewQueue(@CurrentUser AuthenticatedUser authenticatedUser) {
+        return contentService.getReviewQueue(authenticatedUser.userId());
     }
 
     @GetMapping("/favorites")
-    public ApiResponses.FavoritesResponse favorites() {
-        return mockApiService.getFavorites();
-    }
-
-    @GetMapping("/settings")
-    public ApiResponses.SettingsResponse settings() {
-        return mockApiService.getSettings();
+    public ApiResponses.FavoritesResponse favorites(@CurrentUser AuthenticatedUser authenticatedUser) {
+        return contentService.getFavorites(authenticatedUser.userId());
     }
 }

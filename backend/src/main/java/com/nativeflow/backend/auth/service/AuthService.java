@@ -12,6 +12,8 @@ import com.nativeflow.backend.common.exception.ApiException;
 import com.nativeflow.backend.common.exception.ErrorCode;
 import com.nativeflow.backend.common.security.ClientRequestMetadata;
 import com.nativeflow.backend.common.security.JwtTokenProvider;
+import com.nativeflow.backend.content.service.ContentService;
+import com.nativeflow.backend.settings.service.SettingsService;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -36,6 +38,8 @@ public class AuthService {
     private final AuthMapper authMapper;
     private final AuthSessionMapper authSessionMapper;
     private final SubscriptionMapper subscriptionMapper;
+    private final ContentService contentService;
+    private final SettingsService settingsService;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
@@ -43,12 +47,16 @@ public class AuthService {
             AuthMapper authMapper,
             AuthSessionMapper authSessionMapper,
             SubscriptionMapper subscriptionMapper,
+            ContentService contentService,
+            SettingsService settingsService,
             PasswordEncoder passwordEncoder,
             JwtTokenProvider jwtTokenProvider
     ) {
         this.authMapper = authMapper;
         this.authSessionMapper = authSessionMapper;
         this.subscriptionMapper = subscriptionMapper;
+        this.contentService = contentService;
+        this.settingsService = settingsService;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
     }
@@ -78,6 +86,8 @@ public class AuthService {
         OffsetDateTime periodStart = OffsetDateTime.now();
         OffsetDateTime periodEnd = periodStart.plusMonths(1);
         subscriptionMapper.insertUserSubscription(userId, DEFAULT_PLAN_CODE, "trialing", periodStart, periodEnd);
+        settingsService.createDefaultSettings(userId);
+        contentService.subscribeStarterSeries(userId);
 
         UserProfileEntity profile = requireUserProfile(userId);
         SubscriptionAccessEntity subscription = requireAccessibleSubscription(userId);
@@ -139,6 +149,7 @@ public class AuthService {
         String accessToken = jwtTokenProvider.createAccessToken(
                 profile.getId(),
                 sessionId,
+                profile.getName(),
                 profile.getEmail(),
                 profile.getRole()
         );
@@ -166,11 +177,7 @@ public class AuthService {
         SubscriptionAccessEntity subscription = subscriptionMapper.findAccessibleSubscription(userId);
 
         if (subscription == null) {
-            throw new ApiException(
-                    ErrorCode.UNAUTHORIZED,
-                    HttpStatus.UNAUTHORIZED,
-                    "활성 구독이 없어 로그인할 수 없습니다."
-            );
+            throw new ApiException(ErrorCode.UNAUTHORIZED, HttpStatus.UNAUTHORIZED, "활성 구독이 없어 로그인할 수 없습니다.");
         }
 
         return subscription;

@@ -1,51 +1,71 @@
-import { request } from './api';
-import {
-  getDashboardFallback,
-  getFavoritesFallback,
-  getLearningItemFallback,
-  getReviewQueueFallback,
-  getSeriesDetailFallback,
-  getSeriesListFallback,
-  getSettingsFallback,
-} from './mockData';
+import { apiRequest } from './api';
 import type {
+  CheckAnswerResponse,
+  BillingTransactionResponse,
   DashboardResponse,
+  FavoriteToggleResponse,
   FavoritesResponse,
   LearningItemResponse,
+  MySubscriptionResponse,
   ReviewQueueResponse,
+  ReviewResult,
+  ReviewScheduleResponse,
   SeriesDetailResponse,
   SeriesSummary,
   SettingsResponse,
+  UpdateSettingsPayload,
 } from '../types/models';
 
 export const contentService = {
   getDashboard() {
-    return request<DashboardResponse>('/dashboard', { method: 'GET' }, getDashboardFallback);
+    return apiRequest<DashboardResponse>('/dashboard', { method: 'GET' });
   },
   getFavorites() {
-    return request<FavoritesResponse>('/favorites', { method: 'GET' }, getFavoritesFallback);
+    return apiRequest<FavoritesResponse>('/favorites', { method: 'GET' });
   },
   getLearningItem(itemId: string) {
-    return request<LearningItemResponse>(
-      `/learning-items/${itemId}`,
-      { method: 'GET' },
-      () => getLearningItemFallback(itemId),
-    );
+    return apiRequest<LearningItemResponse>(`/learning-items/${itemId}`, { method: 'GET' });
+  },
+  checkAnswer(itemId: string, typedAnswer: string) {
+    return apiRequest<CheckAnswerResponse>(`/learning-items/${itemId}/check-answer`, {
+      body: JSON.stringify({ typedAnswer }),
+      method: 'POST',
+    });
+  },
+  favoriteItem(itemId: string) {
+    return apiRequest<FavoriteToggleResponse>(`/learning-items/${itemId}/favorite`, { method: 'POST' });
+  },
+  unfavoriteItem(itemId: string) {
+    return apiRequest<FavoriteToggleResponse>(`/learning-items/${itemId}/favorite`, { method: 'DELETE' });
   },
   getReviewQueue() {
-    return request<ReviewQueueResponse>('/reviews/queue', { method: 'GET' }, getReviewQueueFallback);
+    return apiRequest<ReviewQueueResponse>('/reviews/queue', { method: 'GET' });
+  },
+  submitReview(itemId: string, result: ReviewResult) {
+    return apiRequest<ReviewScheduleResponse>(`/learning-items/${itemId}/review`, {
+      body: JSON.stringify({ result }),
+      method: 'POST',
+    });
   },
   getSeriesDetail(seriesId: string) {
-    return request<SeriesDetailResponse>(
-      `/series/${seriesId}`,
-      { method: 'GET' },
-      () => getSeriesDetailFallback(seriesId),
-    );
+    return apiRequest<SeriesDetailResponse>(`/series/${seriesId}`, { method: 'GET' });
   },
   getSeriesList() {
-    return request<SeriesSummary[]>('/series', { method: 'GET' }, getSeriesListFallback);
+    return apiRequest<SeriesSummary[]>('/series', { method: 'GET' });
   },
   getSettings() {
-    return request<SettingsResponse>('/settings', { method: 'GET' }, getSettingsFallback);
+    return apiRequest<SettingsResponse>('/settings', { method: 'GET' });
+  },
+  getMySubscription() {
+    return apiRequest<MySubscriptionResponse>('/me/subscription', { method: 'GET' });
+  },
+  getBillingTransactions() {
+    return apiRequest<BillingTransactionResponse[]>('/me/billing-transactions', { method: 'GET' });
+  },
+  updateSettings(payload: UpdateSettingsPayload) {
+    return apiRequest<SettingsResponse>('/settings', {
+      body: JSON.stringify(payload),
+      method: 'PATCH',
+    });
   },
 };
