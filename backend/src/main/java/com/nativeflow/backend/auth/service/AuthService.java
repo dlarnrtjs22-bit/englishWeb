@@ -87,7 +87,7 @@ public class AuthService {
         OffsetDateTime periodEnd = periodStart.plusMonths(1);
         subscriptionMapper.insertUserSubscription(userId, DEFAULT_PLAN_CODE, "trialing", periodStart, periodEnd);
         settingsService.createDefaultSettings(userId);
-        contentService.subscribeStarterSeries(userId);
+        contentService.syncPublishedSeriesAccess(userId);
 
         UserProfileEntity profile = requireUserProfile(userId);
         SubscriptionAccessEntity subscription = requireAccessibleSubscription(userId);
@@ -105,12 +105,14 @@ public class AuthService {
 
         UserProfileEntity profile = requireUserProfile(authUser.getId());
         SubscriptionAccessEntity subscription = requireAccessibleSubscription(authUser.getId());
+        contentService.syncPublishedSeriesAccess(authUser.getId());
         return issueTokens(profile, subscription, metadata);
     }
 
     public AuthDtos.UserProfileResponse me(String userId) {
         UserProfileEntity profile = requireUserProfile(userId);
         SubscriptionAccessEntity subscription = requireAccessibleSubscription(userId);
+        contentService.syncPublishedSeriesAccess(userId);
         return toProfileResponse(profile, subscription);
     }
 

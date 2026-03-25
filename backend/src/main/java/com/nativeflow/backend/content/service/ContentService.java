@@ -270,13 +270,13 @@ public class ContentService {
         );
     }
 
-    public void subscribeStarterSeries(String userId) {
-        String starterSeriesId = contentCommandMapper.findSeriesIdBySlug("everyday-english");
+    public void syncPublishedSeriesAccess(String userId) {
+        List<String> publishedSeriesIds = contentCommandMapper.findPublishedSeriesIds();
 
-        if (starterSeriesId != null) {
-            contentCommandMapper.subscribeSeries(userId, starterSeriesId);
-            contentCommandMapper.ensureSeriesProgress(userId, starterSeriesId);
-            contentCommandMapper.updateSeriesProgressCounts(userId, starterSeriesId);
+        for (String seriesId : publishedSeriesIds) {
+            contentCommandMapper.subscribeSeries(userId, seriesId);
+            contentCommandMapper.ensureSeriesProgress(userId, seriesId);
+            contentCommandMapper.updateSeriesProgressCounts(userId, seriesId);
         }
     }
 

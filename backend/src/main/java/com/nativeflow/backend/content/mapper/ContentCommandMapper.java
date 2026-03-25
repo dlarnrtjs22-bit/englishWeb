@@ -10,6 +10,8 @@ public interface ContentCommandMapper {
 
     String findSeriesIdBySlug(@Param("slug") String slug);
 
+    List<String> findPublishedSeriesIds();
+
     void subscribeSeries(@Param("userId") String userId, @Param("seriesId") String seriesId);
 
     void ensureSeriesProgress(@Param("userId") String userId, @Param("seriesId") String seriesId);

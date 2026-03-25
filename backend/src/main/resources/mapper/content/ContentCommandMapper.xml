@@ -11,6 +11,13 @@
         limit 1
     </select>
 
+    <select id="findPublishedSeriesIds" resultType="string">
+        select id::text
+        from series
+        where is_published = true
+        order by created_at asc
+    </select>
+
     <insert id="subscribeSeries">
         insert into series_subscriptions (user_id, series_id, status)
         values (cast(#{userId} as uuid), cast(#{seriesId} as uuid), 'active')

@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nativeflow.backend.learning.mapper.LearningSessionMapper">
+
+    <select id="insertSession" resultType="string">
+        insert into learning_sessions (
+            user_id,
+            session_type,
+            session_source,
+            total_steps
+        ) values (
+            cast(#{userId} as uuid),
+            #{sessionType},
+            #{sessionSource},
+            #{totalSteps}
+        )
+        returning id::text
+    </select>
+
+    <insert id="insertSessionItem">
+        insert into learning_session_items (
+            session_id,
+            learning_item_id,
+            sequence_no
+        ) values (
+            cast(#{sessionId} as uuid),
+            cast(#{learningItemId} as uuid),
+            #{sequenceNo}
+        )
+    </insert>
+
+    <select id="findStudyCandidates" resultType="com.nativeflow.backend.learning.model.LearningSessionCandidateRow">
+        select
+            li.id::text as learning_item_id
+        from series_subscriptions ss
+        join series s on s.id = ss.series_id
+        join packs p on p.series_id = s.id and p.is_published = true
+        join learning_items li on li.pack_id = p.id and li.is_published = true
+        where ss.user_id = cast(#{userId} as uuid)
+          and ss.status = 'active'
+          and s.is_published = true
+          and (#{seriesId} is null or s.id = cast(#{seriesId} as uuid))
+          and not exists (
+              select 1
+              from excluded_learning_items ex
+              where ex.user_id = cast(#{userId} as uuid)
+                and ex.learning_item_id = li.id
+          )
+          and not exists (
+              select 1
+              from user_answers ua
+              where ua.user_id = cast(#{userId} as uuid)
+                and ua.learning_item_id = li.id
+                and coalesce(ua.is_correct, false) = true
+          )
+        order by s.created_at asc, p.order_index asc, li.order_index asc
+        limit #{limit}
+    </select>
+
+    <select id="findReviewCandidates" resultType="com.nativeflow.backend.learning.model.LearningSessionCandidateRow">
+        select
+            rs.learning_item_id::text as learning_item_id
+        from review_schedules rs
+        where rs.user_id = cast(#{userId} as uuid)
+          and rs.next_review_at is not null
+          and rs.next_review_at &lt; #{dueBefore}
+          and not exists (
+              select 1
+              from excluded_learning_items ex
+              where ex.user_id = cast(#{userId} as uuid)
+                and ex.learning_item_id = rs.learning_item_id
+          )
+        order by rs.next_review_at asc
+    </select>
+
+    <select id="findFavoriteCandidates" resultType="com.nativeflow.backend.learning.model.LearningSessionCandidateRow">
+        select
+            f.learning_item_id::text as learning_item_id
+        from favorites f
+        where f.user_id = cast(#{userId} as uuid)
+          and (#{itemId} is null or f.learning_item_id = cast(#{itemId} as uuid))
+          and not exists (
+              select 1
+              from excluded_learning_items ex
+              where ex.user_id = cast(#{userId} as uuid)
+                and ex.learning_item_id = f.learning_item_id
+          )
+        order by f.created_at desc
+    </select>
+
+    <select id="findSession" resultType="com.nativeflow.backend.learning.model.LearningSessionEntity">
+        select
+            id::text as id,
+            user_id::text as user_id,
+            session_type,
+            session_source,
+            status,
+            total_steps,
+            completed_steps,
+            completed_at
+        from learning_sessions
+        where id = cast(#{sessionId} as uuid)
+          and user_id = cast(#{userId} as uuid)
+        limit 1
+    </select>
+
+    <select id="findCurrentItem" resultType="com.nativeflow.backend.learning.model.LearningSessionCurrentRow">
+        select
+            lsi.id::text as session_item_id,
+            li.id::text as learning_item_id,
+            li.source_text,
+            li.target_text,
+            li.nuance_note,
+            li.example_sentence,
+            li.example_translation,
+            lsi.answer_checked,
+            lsi.last_answer_correct
+        from learning_session_items lsi
+        join learning_items li on li.id = lsi.learning_item_id
+        where lsi.session_id = cast(#{sessionId} as uuid)
+          and lsi.queue_status = 'pending'
+        order by lsi.sequence_no asc
+        limit 1
+    </select>
+
+    <select id="findPendingCount" resultType="int">
+        select count(*)
+        from learning_session_items
+        where session_id = cast(#{sessionId} as uuid)
+          and queue_status = 'pending'
+    </select>
+
+    <select id="findMaxSequence" resultType="int">
+        select coalesce(max(sequence_no), 0)
+        from learning_session_items
+        where session_id = cast(#{sessionId} as uuid)
+    </select>
+
+    <update id="markAnswerResult">
+        update learning_session_items
+        set answer_checked = true,
+            last_answer_correct = #{isCorrect},
+            updated_at = now()
+        where id = cast(#{sessionItemId} as uuid)
+    </update>
+
+    <update id="requeueItem">
+        update learning_session_items
+        set sequence_no = #{sequenceNo},
+            queue_bucket = 'retry',
+            answer_checked = false,
+            last_rating = #{lastRating},
+            retry_count = retry_count + 1,
+            updated_at = now()
+        where id = cast(#{sessionItemId} as uuid)
+    </update>
+
+    <update id="completeItem">
+        update learning_session_items
+        set queue_status = #{queueStatus},
+            last_rating = #{lastRating},
+            updated_at = now()
+        where id = cast(#{sessionItemId} as uuid)
+    </update>
+
+    <update id="incrementSessionTotals">
+        update learning_sessions
+        set total_steps = total_steps + #{totalStepsDelta},
+            completed_steps = completed_steps + #{completedStepsDelta},
+            updated_at = now()
+        where id = cast(#{sessionId} as uuid)
+    </update>
+
+    <update id="markSessionCompleted">
+        update learning_sessions
+        set status = 'completed',
+            completed_at = now(),
+            updated_at = now()
+        where id = cast(#{sessionId} as uuid)
+    </update>
+
+    <select id="countItemsByStatus" resultType="int">
+        select count(*)
+        from learning_session_items
+        where session_id = cast(#{sessionId} as uuid)
+          and queue_status = #{queueStatus}
+    </select>
+</mapper>
