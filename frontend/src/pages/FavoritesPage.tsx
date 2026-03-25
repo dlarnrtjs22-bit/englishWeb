@@ -33,14 +33,14 @@ export function FavoritesPage() {
 
       <div className="content-list">
         {data.items.map((item) => (
-          <article className="favorite-card" key={item.itemId}>
-            <div>
-              <p className="eyebrow">{item.seriesTitle}</p>
-              <h3>{item.targetText}</h3>
-              <p>{item.sourceText}</p>
-              <span className="muted">{item.packTitle}</span>
+          <article className="favorite-card" key={item.itemId} style={{ gridTemplateColumns: 'minmax(0, 1fr) auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+              <p className="eyebrow" style={{ margin: 0 }}>{item.seriesTitle}</p>
+              <h3 style={{ margin: 0, fontSize: '1.2rem' }}>{item.targetText}</h3>
+              <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text)' }}>{item.sourceText}</p>
+              <span className="muted" style={{ fontSize: '0.85rem' }}>{item.packTitle}</span>
             </div>
-            <Link className="button secondary" to={`/learning/${item.itemId}`}>
+            <Link className="button secondary" to={`/learning/${item.itemId}`} style={{ whiteSpace: 'nowrap', padding: '0.6rem 1rem' }}>
               다시 학습
             </Link>
           </article>

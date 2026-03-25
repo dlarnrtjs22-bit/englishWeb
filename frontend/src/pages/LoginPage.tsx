@@ -52,12 +52,10 @@ export function LoginPage() {
       <section className="auth-hero">
         <p className="eyebrow">English Learning</p>
         <h1>오늘의 표현부터 차근차근 이어가는 영어 학습</h1>
-        <p>
-          짧은 표현 하나라도 직접 써보고 복습까지 이어가면 학습 감각이 훨씬 안정적으로 쌓입니다.
-        </p>
+        <p>짧은 표현 하나라도 직접 써보고 복습까지 이어가면 학습 감각이 훨씬 안정적으로 쌓입니다.</p>
         <div className="auth-hero-card">
           <strong>학습 루틴</strong>
-          <span>표현 확인 → 직접 입력 → 예문 이해 → 복습까지 한 번에 이어집니다.</span>
+          <span>표현 확인, 직접 입력, 예문 이해, 복습까지 자연스럽게 이어집니다.</span>
         </div>
       </section>
 
@@ -89,14 +87,16 @@ export function LoginPage() {
             />
           </label>
 
-          <label className="remember-field">
-            <input
-              checked={form.rememberMe}
-              onChange={(event) => setForm((prev) => ({ ...prev, rememberMe: event.target.checked }))}
-              type="checkbox"
-            />
-            <span>로그인 상태 유지</span>
-          </label>
+          <div className="remember-row">
+            <label className="remember-field">
+              <input
+                checked={form.rememberMe}
+                onChange={(event) => setForm((prev) => ({ ...prev, rememberMe: event.target.checked }))}
+                type="checkbox"
+              />
+              <span>로그인 상태 유지</span>
+            </label>
+          </div>
 
           <button className="button primary wide" disabled={isSubmitting} type="submit">
             {isSubmitting ? '로그인 중...' : '로그인'}

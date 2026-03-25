@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useToast } from '../app/ToastContext';
 import { ErrorPanel, LoadingPanel } from '../components/StatePanels';
@@ -21,15 +21,22 @@ export function LearningPage() {
   const { itemId = '' } = useParams();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { data, error, loading, reload } = useRemoteData(
-    () => contentService.getLearningItem(itemId),
-    [itemId],
-  );
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+  const { data, error, loading, reload } = useRemoteData(() => contentService.getLearningItem(itemId), [itemId]);
   const [answer, setAnswer] = useState('');
   const [answerResult, setAnswerResult] = useState<CheckAnswerResponse | null>(null);
   const [sentence, setSentence] = useState('');
   const [favorite, setFavorite] = useState(false);
   const [reviewResult, setReviewResult] = useState<ReviewResult | null>(null);
+
+  useEffect(() => {
+    setAnswer('');
+    setAnswerResult(null);
+    setSentence('');
+    setFavorite(false);
+    setReviewResult(null);
+    window.speechSynthesis.cancel();
+  }, [itemId]);
 
   if (loading) {
     return <LoadingPanel message="학습 카드를 준비하고 있습니다." />;
@@ -121,109 +128,112 @@ export function LearningPage() {
             </strong>
           </div>
           <div className="progress-track">
-            <span
-              className="progress-fill"
-              style={{ width: `${(data.progress.current / data.progress.total) * 100}%` }}
-            />
+            <span className="progress-fill" style={{ width: `${(data.progress.current / data.progress.total) * 100}%` }} />
           </div>
         </div>
       </header>
 
-      <section className="learning-main-row">
-        <article className="learning-panel learning-half">
-          <div className="learning-head-copy">
-            <h1>{data.sourceText}</h1>
-            <p>{data.nuanceNote}</p>
-          </div>
-
-          <div className="split-line">
-            <h3>정답 입력</h3>
-            <button
-              className={`icon-button bordered${favorite ? ' active' : ''}`}
-              onClick={() => void handleFavorite()}
-              type="button"
-            >
-              <span className="material-symbols-outlined">bookmark</span>
-            </button>
-          </div>
-
-          <textarea
-            className="answer-input"
-            onChange={(event) => setAnswer(event.target.value)}
-            rows={5}
-            value={answer}
-          />
-
-          <button className="button primary wide" onClick={() => void handleCheckAnswer()} type="button">
-            정답 확인
-          </button>
-        </article>
-
-        <article className={`learning-panel learning-half answer-card${answerResult?.isCorrect ? ' success' : ''}${!answerCard ? ' answer-card-hidden' : ''}`}>
-          <div className="split-line">
-            <div>
-              <p className="eyebrow">Answer</p>
-              <h3>{answerCard ? answerCard.text : '정답 확인 후 표시됩니다.'}</h3>
+      <div className="learning-scroll-area">
+        <section
+          className="learning-main-row"
+          style={{
+            alignItems: 'stretch',
+            display: 'grid',
+            gap: '1rem',
+            gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) minmax(0, 1fr)',
+          }}
+        >
+          <article className="learning-panel learning-half">
+            <div className="learning-head-copy">
+              <h1>{data.sourceText}</h1>
+              <p>{data.nuanceNote}</p>
             </div>
-            <button
-              className="icon-button"
-              disabled={!answerCard}
-              onClick={() => answerCard ? speak(answerCard.text) : undefined}
-              type="button"
-            >
-              <span className="material-symbols-outlined">volume_up</span>
-            </button>
-          </div>
 
-          <div className="example-block">
             <div className="split-line">
-              <strong>Example</strong>
-              <button
-                className="icon-button"
-                disabled={!answerCard}
-                onClick={() => answerCard ? speak(answerCard.sentence) : undefined}
-                type="button"
-              >
+              <h3>정답 입력</h3>
+              <button className={`icon-button bordered${favorite ? ' active' : ''}`} onClick={() => void handleFavorite()} type="button">
+                <span className="material-symbols-outlined">bookmark</span>
+              </button>
+            </div>
+
+            <textarea className="answer-input" onChange={(event) => setAnswer(event.target.value)} rows={4} value={answer} />
+
+            <button className="button primary wide" onClick={() => void handleCheckAnswer()} type="button">
+              정답 확인
+            </button>
+          </article>
+
+          <article className={`learning-panel learning-half answer-card${answerResult?.isCorrect ? ' success' : ''}${!answerCard ? ' answer-card-hidden' : ''}`}>
+            <div className="split-line">
+              <div>
+                <p className="eyebrow">Answer</p>
+                <h3>{answerCard ? answerCard.text : '정답 확인 후 표시됩니다.'}</h3>
+              </div>
+              <button className="icon-button" disabled={!answerCard} onClick={() => answerCard ? speak(answerCard.text) : undefined} type="button">
                 <span className="material-symbols-outlined">volume_up</span>
               </button>
             </div>
-            <p className="example-text">{answerCard ? answerCard.sentence : '정답 확인 후 예문이 표시됩니다.'}</p>
-            <p className="example-translation">{answerCard ? answerCard.translation : '해석도 함께 표시됩니다.'}</p>
-          </div>
-        </article>
-      </section>
 
-      <section className="learning-panel sentence-panel">
-        <div className="split-line">
-          <div>
-            <p className="eyebrow">Sentence Practice</p>
-            <h3>내 문장 만들기</h3>
-          </div>
-        </div>
+            <div className="example-block">
+              <div className="split-line">
+                <strong>Example</strong>
+                <button className="icon-button" disabled={!answerCard} onClick={() => answerCard ? speak(answerCard.sentence) : undefined} type="button">
+                  <span className="material-symbols-outlined">volume_up</span>
+                </button>
+              </div>
+              <p className="example-text">{answerCard ? answerCard.sentence : '정답 확인 후 예문이 표시됩니다.'}</p>
+              <p className="example-translation">{answerCard ? answerCard.translation : '해석도 함께 표시됩니다.'}</p>
+            </div>
+          </article>
+        </section>
 
-        <textarea
-          onChange={(event) => setSentence(event.target.value)}
-          placeholder="표현을 사용해서 직접 문장을 만들어보세요."
-          rows={4}
-          value={sentence}
-        />
+        <section
+          className="learning-panel sentence-panel"
+          style={{
+            display: 'grid',
+            gap: '1rem',
+            gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1.5fr) minmax(0, 1fr)',
+            marginTop: '1rem',
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+            <div>
+              <p className="eyebrow">Sentence Practice</p>
+              <h3>내 문장 만들기</h3>
+            </div>
 
-        <div className="ai-feedback">
-          <div className="icon-badge mint">
-            <span className="material-symbols-outlined">auto_awesome</span>
+            <textarea
+              onChange={(event) => setSentence(event.target.value)}
+              placeholder="표현을 사용해서 직접 문장을 만들어보세요."
+              value={sentence}
+            />
           </div>
-          <div>
-            <strong>AI 문장 피드백</strong>
-            <p>
-              {sentence.trim().length > 0
-                ? data.aiFeedback
-                : '문장을 입력하면 여기에서 피드백을 이어갈 수 있습니다.'}
-            </p>
-          </div>
-        </div>
-      </section>
 
-      <footer className="review-action-bar learning-review-bar">
+          <div className="ai-feedback">
+            <div className="icon-badge mint">
+              <span className="material-symbols-outlined">auto_awesome</span>
+            </div>
+            <div>
+              <strong>AI 문장 피드백</strong>
+              <p>
+                {sentence.trim().length > 0
+                  ? data.aiFeedback
+                  : '문장을 입력하면 여기에서 피드백을 이어갈 수 있습니다.'}
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <footer
+        className="review-action-bar learning-review-bar"
+        style={{
+          display: 'grid',
+          gap: '0.45rem',
+          gridTemplateColumns: isMobile ? 'repeat(4, minmax(0, 1fr))' : 'repeat(8, minmax(0, 1fr))',
+          padding: '0.7rem',
+        }}
+      >
         {reviewOptions.map((option) => (
           <button
             className={`review-pill review-pill-compact${reviewResult === option.result ? ' active' : ''}${option.result === 'exclude' ? ' exclude' : ''}`}

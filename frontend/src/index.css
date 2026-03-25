@@ -1407,8 +1407,9 @@ img {
   }
 
   .page-learning {
-    height: auto;
-    overflow: visible;
+    height: calc(100vh - 5.5rem);
+    overflow: hidden;
+    padding: 0.5rem;
   }
 
   .review-action-bar,
@@ -1485,5 +1486,50 @@ img {
 
   .learning-review-bar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Compact learning layout for mobile */
+  .mobile-fit-learning .learning-panel {
+    padding: 0.6rem !important;
+    gap: 0.4rem !important;
+  }
+  .mobile-fit-learning h1 {
+    font-size: 1.2rem !important;
+    margin-bottom: 0 !important;
+  }
+  .mobile-fit-learning h3 {
+    font-size: 0.95rem !important;
+  }
+  .mobile-fit-learning p {
+    font-size: 0.8rem !important;
+  }
+  .mobile-fit-learning textarea {
+    min-height: 3rem !important;
+    height: 3rem !important;
+    padding: 0.5rem !important;
+    font-size: 0.85rem !important;
+  }
+  .mobile-fit-learning .button {
+    padding: 0.4rem 0.8rem !important;
+    min-height: 2rem !important;
+    font-size: 0.85rem !important;
+  }
+  .mobile-fit-learning .icon-button {
+    width: 2rem !important;
+    min-height: 2rem !important;
+  }
+  .mobile-fit-learning .split-line {
+    margin-bottom: 0 !important;
+  }
+  .mobile-fit-learning .example-block {
+    padding: 0.6rem !important;
+  }
+  .mobile-fit-learning .ai-feedback {
+    padding: 0.6rem !important;
+    gap: 0.4rem !important;
+  }
+  /* Force vertical stacking on mobile */
+  .mobile-fit-learning .mobile-sentence-panel {
+    grid-template-columns: 1fr !important;
   }
 }
