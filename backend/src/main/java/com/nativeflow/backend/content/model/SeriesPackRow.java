@@ -7,6 +7,9 @@ public class SeriesPackRow {
     private String description;
     private int itemCount;
     private int orderIndex;
+    private int completedItemCount;
+    private int remainingItemCount;
+    private String firstItemId;
 
     public String getId() {
         return id;
@@ -46,5 +49,29 @@ public class SeriesPackRow {
 
     public void setOrderIndex(int orderIndex) {
         this.orderIndex = orderIndex;
+    }
+
+    public int getCompletedItemCount() {
+        return completedItemCount;
+    }
+
+    public void setCompletedItemCount(int completedItemCount) {
+        this.completedItemCount = completedItemCount;
+    }
+
+    public int getRemainingItemCount() {
+        return remainingItemCount;
+    }
+
+    public void setRemainingItemCount(int remainingItemCount) {
+        this.remainingItemCount = remainingItemCount;
+    }
+
+    public String getFirstItemId() {
+        return firstItemId;
+    }
+
+    public void setFirstItemId(String firstItemId) {
+        this.firstItemId = firstItemId;
     }
 }

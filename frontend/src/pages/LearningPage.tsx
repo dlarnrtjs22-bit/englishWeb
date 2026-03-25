@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useToast } from '../app/ToastContext';
 import { ErrorPanel, LoadingPanel } from '../components/StatePanels';
 import { useRemoteData } from '../hooks/useRemoteData';
@@ -20,9 +20,11 @@ const reviewOptions: Array<{ label: string; result: ReviewResult; subtitle: stri
 export function LearningPage() {
   const { itemId = '' } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { showToast } = useToast();
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
-  const { data, error, loading, reload } = useRemoteData(() => contentService.getLearningItem(itemId), [itemId]);
+  const mode = searchParams.get('mode') ?? 'study';
+  const seriesId = searchParams.get('seriesId');
+  const { data, error, loading, reload } = useRemoteData(() => contentService.getLearningItem(itemId, mode), [itemId, mode]);
   const [answer, setAnswer] = useState('');
   const [answerResult, setAnswerResult] = useState<CheckAnswerResponse | null>(null);
   const [sentence, setSentence] = useState('');
@@ -73,6 +75,7 @@ export function LearningPage() {
     try {
       const response = await contentService.checkAnswer(itemId, answer);
       setAnswerResult(response);
+      speak(response.correctAnswer);
       showToast(response.isCorrect ? '정답입니다.' : '정답을 확인해보세요.', response.isCorrect ? 'success' : 'error');
     } catch (cause) {
       showToast(cause instanceof Error ? cause.message : '정답 확인에 실패했습니다.', 'error');
@@ -92,8 +95,12 @@ export function LearningPage() {
   };
 
   const handleReview = async (result: ReviewResult) => {
+    if (!answerResult) {
+      return;
+    }
+
     try {
-      const response = await contentService.submitReview(itemId, result);
+      const response = await contentService.submitReview(itemId, result, mode);
       setReviewResult(result);
       showToast(
         result === 'exclude'
@@ -103,7 +110,22 @@ export function LearningPage() {
       );
 
       if (response.nextItemId) {
-        navigate(`/learning/${response.nextItemId}`, { replace: true });
+        const nextParams = new URLSearchParams({ mode });
+        if (seriesId) {
+          nextParams.set('seriesId', seriesId);
+        }
+        navigate(`/learning/${response.nextItemId}?${nextParams.toString()}`, { replace: true });
+        return;
+      }
+
+      if (mode === 'study') {
+        showToast('현재 유닛 학습을 완료했습니다.', 'success');
+        navigate(seriesId ? `/series/${seriesId}` : '/my-series', { replace: true });
+        return;
+      }
+
+      if (mode === 'favorites') {
+        navigate('/favorites', { replace: true });
         return;
       }
 
@@ -249,10 +271,17 @@ export function LearningPage() {
         {reviewOptions.map((option) => (
           <button
             className={`review-pill review-pill-compact${reviewResult === option.result ? ' active' : ''}${option.result === 'exclude' ? ' exclude' : ''}`}
+            disabled={!answerResult}
             key={option.result}
             onClick={() => void handleReview(option.result)}
             type="button"
-            style={{ minHeight: '3rem', padding: '0.4rem 0.2rem', gap: '0.15rem' }}
+            style={{
+              minHeight: '3rem',
+              padding: '0.4rem 0.2rem',
+              gap: '0.15rem',
+              opacity: answerResult ? 1 : 0.45,
+              cursor: answerResult ? 'pointer' : 'not-allowed',
+            }}
           >
             <strong style={{ fontSize: '0.82rem' }}>{option.label}</strong>
             <span style={{ fontSize: '0.65rem', whiteSpace: 'nowrap' }}>{option.subtitle}</span>

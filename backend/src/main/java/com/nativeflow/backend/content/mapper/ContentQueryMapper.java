@@ -21,11 +21,21 @@ public interface ContentQueryMapper {
 
     SeriesDetailRow findSeriesDetail(@Param("userId") String userId, @Param("seriesId") String seriesId);
 
-    List<SeriesPackRow> findSeriesPacks(@Param("seriesId") String seriesId);
+    List<SeriesPackRow> findSeriesPacks(@Param("userId") String userId, @Param("seriesId") String seriesId);
 
-    String findFirstLearningItemIdByPackId(@Param("packId") String packId);
+    String findFirstLearningItemIdByPackId(@Param("userId") String userId, @Param("packId") String packId);
 
-    LearningItemRow findLearningItem(@Param("itemId") String itemId);
+    LearningItemRow findLearningItem(
+            @Param("userId") String userId,
+            @Param("itemId") String itemId,
+            @Param("mode") String mode
+    );
+
+    String findNextStudyLearningItemId(@Param("userId") String userId, @Param("itemId") String itemId);
+
+    String findNextReviewItemId(@Param("userId") String userId, @Param("itemId") String itemId);
+
+    String findNextFavoriteItemId(@Param("userId") String userId, @Param("itemId") String itemId);
 
     List<FavoriteRow> findFavorites(@Param("userId") String userId);
 

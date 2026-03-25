@@ -67,7 +67,7 @@ export function SeriesDetailPage() {
                   <span className="progress-fill" style={{ width: `${pack.progress}%` }} />
                 </div>
                 {!pack.locked && pack.firstItemId ? (
-                  <Link className="button secondary" to={`/learning/${pack.firstItemId}`}>
+                  <Link className="button secondary" to={`/learning/${pack.firstItemId}?mode=study&seriesId=${data.id}`}>
                     학습 시작
                   </Link>
                 ) : null}

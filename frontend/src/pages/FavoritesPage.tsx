@@ -40,7 +40,7 @@ export function FavoritesPage() {
               <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text)' }}>{item.sourceText}</p>
               <span className="muted" style={{ fontSize: '0.85rem' }}>{item.packTitle}</span>
             </div>
-            <Link className="button secondary" to={`/learning/${item.itemId}`} style={{ whiteSpace: 'nowrap', padding: '0.6rem 1rem' }}>
+            <Link className="button secondary" to={`/learning/${item.itemId}?mode=favorites`} style={{ whiteSpace: 'nowrap', padding: '0.6rem 1rem' }}>
               다시 학습
             </Link>
           </article>

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
 import jakarta.validation.Valid;
 
 @RestController
@@ -44,8 +45,12 @@ public class ContentController {
     }
 
     @GetMapping("/learning-items/{itemId}")
-    public ApiResponses.LearningItemResponse learningItem(@PathVariable String itemId) {
-        return contentService.getLearningItem(itemId);
+    public ApiResponses.LearningItemResponse learningItem(
+            @CurrentUser AuthenticatedUser authenticatedUser,
+            @PathVariable String itemId,
+            @RequestParam(required = false, defaultValue = "study") String mode
+    ) {
+        return contentService.getLearningItem(authenticatedUser.userId(), itemId, mode);
     }
 
     @PostMapping("/learning-items/{itemId}/check-answer")
@@ -79,7 +84,7 @@ public class ContentController {
             @PathVariable String itemId,
             @Valid @RequestBody ContentActionDtos.ReviewRequest request
     ) {
-        return contentService.submitReview(authenticatedUser.userId(), itemId, request.result());
+        return contentService.submitReview(authenticatedUser.userId(), itemId, request.result(), request.mode());
     }
 
     @GetMapping("/reviews/queue")

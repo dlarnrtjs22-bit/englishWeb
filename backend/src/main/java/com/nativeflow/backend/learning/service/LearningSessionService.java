@@ -105,7 +105,7 @@ public class LearningSessionService {
         learningSessionMapper.markAnswerResult(current.getSessionItemId(), isCorrect);
         contentCommandMapper.insertUserAnswer(userId, current.getLearningItemId(), typedAnswer, normalizedAnswer, isCorrect);
 
-        LearningItemRow row = contentQueryMapper.findLearningItem(current.getLearningItemId());
+        LearningItemRow row = contentQueryMapper.findLearningItem(userId, current.getLearningItemId(), "study");
         return new ApiResponses.CheckAnswerResponse(
                 isCorrect,
                 row.getTargetText(),

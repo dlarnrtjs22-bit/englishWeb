@@ -158,13 +158,27 @@
                   and li.is_published = true
             ),
             learned_items = (
-                select count(distinct ua.learning_item_id)
-                from user_answers ua
-                join learning_items li on li.id = ua.learning_item_id
+                select count(*)
+                from learning_items li
                 join packs p on p.id = li.pack_id
-                where ua.user_id = cast(#{userId} as uuid)
-                  and p.series_id = cast(#{seriesId} as uuid)
-                  and coalesce(ua.is_correct, false) = true
+                where p.series_id = cast(#{seriesId} as uuid)
+                  and li.is_published = true
+                  and (
+                      exists (
+                          select 1
+                          from excluded_learning_items ex
+                          where ex.user_id = cast(#{userId} as uuid)
+                            and ex.learning_item_id = li.id
+                      )
+                      or exists (
+                          select 1
+                          from review_schedules rs
+                          where rs.user_id = cast(#{userId} as uuid)
+                            and rs.learning_item_id = li.id
+                            and rs.last_result is not null
+                            and rs.last_result &lt;&gt; 'minute'
+                      )
+                  )
             ),
             due_items = (
                 select count(*)

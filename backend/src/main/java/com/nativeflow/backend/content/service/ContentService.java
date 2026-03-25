@@ -11,13 +11,17 @@ import com.nativeflow.backend.content.model.SeriesCardRow;
 import com.nativeflow.backend.content.model.SeriesDetailRow;
 import com.nativeflow.backend.content.model.SeriesPackRow;
 import com.nativeflow.backend.dto.ApiResponses;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ContentService {
+
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
     private final ContentCommandMapper contentCommandMapper;
     private final ContentQueryMapper contentQueryMapper;
@@ -74,7 +78,13 @@ public class ContentService {
 
     public ApiResponses.SeriesDetailResponse getSeriesDetail(String userId, String seriesId) {
         SeriesDetailRow detail = contentQueryMapper.findSeriesDetail(userId, seriesId);
-        List<SeriesPackRow> packs = contentQueryMapper.findSeriesPacks(seriesId);
+        List<SeriesPackRow> packs = contentQueryMapper.findSeriesPacks(userId, seriesId);
+        int totalItems = packs.stream().mapToInt(SeriesPackRow::getItemCount).sum();
+        int completedItems = packs.stream().mapToInt(SeriesPackRow::getCompletedItemCount).sum();
+        int overallProgress = totalItems == 0
+                ? 0
+                : (int) Math.round((completedItems * 100.0) / totalItems);
+        boolean allUnitsCompleted = totalItems > 0 && completedItems >= totalItems;
 
         return new ApiResponses.SeriesDetailResponse(
                 detail.getId(),
@@ -85,8 +95,12 @@ public class ContentService {
                 "NativeFlow Coach",
                 inferLevel(detail.getCategoryLabel()),
                 "2026.03.25",
-                detail.getProgress(),
-                packs.isEmpty() ? "아직 학습 유닛이 없습니다." : "유닛을 선택하면 바로 학습을 시작할 수 있습니다.",
+                overallProgress,
+                packs.isEmpty()
+                        ? "아직 학습 유닛이 없습니다."
+                        : allUnitsCompleted
+                                ? "오늘 학습할 단어를 모두 마쳤습니다."
+                                : "남은 유닛을 선택하면 바로 학습을 시작할 수 있습니다.",
                 "표현을 이해하고 직접 써보는 흐름으로 구성했습니다.",
                 buildTags(detail.getCategoryLabel()),
                 packs.stream()
@@ -96,18 +110,24 @@ public class ContentService {
                                 pack.getTitle(),
                                 pack.getDescription(),
                                 pack.getItemCount(),
-                                0,
+                                pack.getItemCount() == 0
+                                        ? 0
+                                        : (int) Math.round((pack.getCompletedItemCount() * 100.0) / pack.getItemCount()),
+                                pack.getRemainingItemCount() == 0 && pack.getItemCount() > 0,
                                 false,
-                                false,
-                                "바로 시작 가능",
-                                contentQueryMapper.findFirstLearningItemIdByPackId(pack.getId())
+                                pack.getRemainingItemCount() == 0
+                                        ? "오늘 완료"
+                                        : pack.getCompletedItemCount() > 0
+                                                ? "이어 학습"
+                                                : "바로 시작 가능",
+                                pack.getFirstItemId()
                         ))
                         .toList()
         );
     }
 
-    public ApiResponses.LearningItemResponse getLearningItem(String itemId) {
-        LearningItemRow row = contentQueryMapper.findLearningItem(itemId);
+    public ApiResponses.LearningItemResponse getLearningItem(String userId, String itemId, String mode) {
+        LearningItemRow row = contentQueryMapper.findLearningItem(userId, itemId, normalizeMode(mode));
 
         return new ApiResponses.LearningItemResponse(
                 row.getId(),
@@ -122,6 +142,7 @@ public class ContentService {
     }
 
     public ApiResponses.CheckAnswerResponse checkAnswer(String userId, String itemId, String typedAnswer) {
+        String rawAnswer = typedAnswer == null ? "" : typedAnswer;
         String normalizedAnswer = normalizeAnswer(typedAnswer);
         List<String> acceptedAnswers = contentCommandMapper.findAcceptedAnswers(itemId).stream()
                 .map(this::normalizeAnswer)
@@ -129,10 +150,10 @@ public class ContentService {
                 .toList();
         boolean isCorrect = acceptedAnswers.contains(normalizedAnswer);
 
-        contentCommandMapper.insertUserAnswer(userId, itemId, typedAnswer, normalizedAnswer, isCorrect);
+        contentCommandMapper.insertUserAnswer(userId, itemId, rawAnswer, normalizedAnswer, isCorrect);
         syncSeriesProgress(userId, itemId);
 
-        LearningItemRow row = contentQueryMapper.findLearningItem(itemId);
+        LearningItemRow row = contentQueryMapper.findLearningItem(userId, itemId, "study");
         return new ApiResponses.CheckAnswerResponse(
                 isCorrect,
                 row.getTargetText(),
@@ -203,8 +224,9 @@ public class ContentService {
         );
     }
 
-    public ApiResponses.ReviewScheduleResponse submitReview(String userId, String itemId, String result) {
+    public ApiResponses.ReviewScheduleResponse submitReview(String userId, String itemId, String result, String mode) {
         String normalizedResult = result.trim().toLowerCase();
+        String normalizedMode = normalizeMode(mode);
         int intervalDays = switch (normalizedResult) {
             case "again" -> 1;
             case "minute" -> 0;
@@ -241,20 +263,21 @@ public class ContentService {
 
         if ("exclude".equals(normalizedResult)) {
             contentCommandMapper.excludeItem(userId, itemId);
+            syncSeriesProgress(userId, itemId);
             return new ApiResponses.ReviewScheduleResponse(
                     true,
                     normalizedResult,
                     0,
                     0.0,
                     null,
-                    contentCommandMapper.findNextLearningItemId(itemId)
+                    selectNextItemId(userId, itemId, normalizedMode, normalizedResult)
             );
         }
 
         contentCommandMapper.unexcludeItem(userId, itemId);
         OffsetDateTime nextReviewAt = "minute".equals(normalizedResult)
                 ? OffsetDateTime.now().plusMinutes(1)
-                : OffsetDateTime.now().plusDays(intervalDays);
+                : resolveNextReviewAt(normalizedResult, intervalDays);
 
         contentCommandMapper.upsertReviewSchedule(userId, itemId, normalizedResult, intervalDays, repetitionCount, easeFactor, nextReviewAt);
         contentCommandMapper.insertReviewLog(userId, itemId, normalizedResult, intervalDays, easeFactor);
@@ -266,7 +289,7 @@ public class ContentService {
                 intervalDays,
                 easeFactor,
                 nextReviewAt.toString(),
-                contentCommandMapper.findNextLearningItemId(itemId)
+                selectNextItemId(userId, itemId, normalizedMode, normalizedResult)
         );
     }
 
@@ -287,6 +310,30 @@ public class ContentService {
             contentCommandMapper.ensureSeriesProgress(userId, seriesId);
             contentCommandMapper.updateSeriesProgressCounts(userId, seriesId);
         }
+    }
+
+    private OffsetDateTime resolveNextReviewAt(String normalizedResult, int intervalDays) {
+        LocalDate today = LocalDate.now(SEOUL);
+
+        return switch (normalizedResult) {
+            case "month" -> today.plusMonths(1).atStartOfDay(SEOUL).toOffsetDateTime();
+            case "year" -> today.plusYears(1).atStartOfDay(SEOUL).toOffsetDateTime();
+            default -> today.plusDays(intervalDays).atStartOfDay(SEOUL).toOffsetDateTime();
+        };
+    }
+
+    private String selectNextItemId(String userId, String itemId, String mode, String result) {
+        return switch (mode) {
+            case "review" -> contentQueryMapper.findNextReviewItemId(userId, itemId);
+            case "favorites" -> {
+                String nextItemId = contentQueryMapper.findNextFavoriteItemId(userId, itemId);
+                if (!"minute".equals(result) && itemId.equals(nextItemId)) {
+                    yield null;
+                }
+                yield nextItemId;
+            }
+            default -> contentQueryMapper.findNextStudyLearningItemId(userId, itemId);
+        };
     }
 
     private ApiResponses.SeriesSummaryDto toSeriesSummary(SeriesCardRow row, String subtitle, String badge) {
@@ -318,6 +365,18 @@ public class ContentService {
 
     private List<String> buildTags(String categoryLabel) {
         return List.of(categoryLabel, "표현 중심", "반복 학습", "한국어 해설");
+    }
+
+    private String normalizeMode(String mode) {
+        if (mode == null) {
+            return "study";
+        }
+
+        return switch (mode.trim().toLowerCase()) {
+            case "favorites" -> "favorites";
+            case "review" -> "review";
+            default -> "study";
+        };
     }
 
     private String normalizeAnswer(String value) {

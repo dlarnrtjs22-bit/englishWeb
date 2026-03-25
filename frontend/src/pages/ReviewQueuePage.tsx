@@ -31,7 +31,7 @@ export function ReviewQueuePage() {
           <p className="eyebrow">Review Queue</p>
           <h3>오늘의 복습 큐</h3>
         </div>
-        <Link className="button primary" to={`/learning/${data.items[0]?.itemId ?? 'item-doze-off'}`}>
+        <Link className="button primary" to={`/learning/${data.items[0]?.itemId ?? 'item-doze-off'}?mode=review`}>
           모두 복습하기
         </Link>
       </section>
@@ -73,7 +73,7 @@ export function ReviewQueuePage() {
 
                 <div className="queue-items">
                   {group.items.map((item) => (
-                    <Link className="queue-item" key={item.itemId} to={`/learning/${item.itemId}`}>
+                    <Link className="queue-item" key={item.itemId} to={`/learning/${item.itemId}?mode=review`}>
                       <div>
                         <strong>{item.sourceText}</strong>
                         <p>{item.contextText}</p>

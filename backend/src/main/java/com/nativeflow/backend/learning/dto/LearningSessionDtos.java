@@ -40,7 +40,7 @@ public final class LearningSessionDtos {
     ) {
     }
 
-    public record SessionAnswerRequest(@NotBlank(message = "정답 입력값은 필수입니다.") String typedAnswer) {
+    public record SessionAnswerRequest(String typedAnswer) {
     }
 
     public record SessionRateRequest(@NotBlank(message = "평가 결과는 필수입니다.") String result) {

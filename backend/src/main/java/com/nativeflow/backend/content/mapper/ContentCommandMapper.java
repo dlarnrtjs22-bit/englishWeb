@@ -57,6 +57,4 @@ public interface ContentCommandMapper {
     void updateSeriesProgressCounts(@Param("userId") String userId, @Param("seriesId") String seriesId);
 
     String findSeriesIdByLearningItem(@Param("itemId") String itemId);
-
-    String findNextLearningItemId(@Param("itemId") String itemId);
 }

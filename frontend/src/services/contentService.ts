@@ -23,8 +23,9 @@ export const contentService = {
   getFavorites() {
     return apiRequest<FavoritesResponse>('/favorites', { method: 'GET' });
   },
-  getLearningItem(itemId: string) {
-    return apiRequest<LearningItemResponse>(`/learning-items/${itemId}`, { method: 'GET' });
+  getLearningItem(itemId: string, mode = 'study') {
+    const params = new URLSearchParams({ mode });
+    return apiRequest<LearningItemResponse>(`/learning-items/${itemId}?${params.toString()}`, { method: 'GET' });
   },
   checkAnswer(itemId: string, typedAnswer: string) {
     return apiRequest<CheckAnswerResponse>(`/learning-items/${itemId}/check-answer`, {
@@ -41,9 +42,9 @@ export const contentService = {
   getReviewQueue() {
     return apiRequest<ReviewQueueResponse>('/reviews/queue', { method: 'GET' });
   },
-  submitReview(itemId: string, result: ReviewResult) {
+  submitReview(itemId: string, result: ReviewResult, mode = 'study') {
     return apiRequest<ReviewScheduleResponse>(`/learning-items/${itemId}/review`, {
-      body: JSON.stringify({ result }),
+      body: JSON.stringify({ mode, result }),
       method: 'POST',
     });
   },
