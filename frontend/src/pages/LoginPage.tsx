@@ -1,13 +1,14 @@
 import { startTransition, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../app/AuthContext';
+import { useToast } from '../app/ToastContext';
 import { isValidEmail } from '../utils/validation';
 
 export function LoginPage() {
   const { login } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
     email: '',
@@ -18,15 +19,14 @@ export function LoginPage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError('');
 
     if (!isValidEmail(form.email)) {
-      setError('올바른 이메일 형식이 아닙니다.');
+      showToast('올바른 이메일 형식이 아닙니다.', 'error');
       return;
     }
 
     if (!form.password.trim()) {
-      setError('비밀번호를 입력해주세요.');
+      showToast('비밀번호를 입력해주세요.', 'error');
       return;
     }
 
@@ -37,9 +37,10 @@ export function LoginPage() {
         email: form.email.trim(),
         password: form.password,
       });
+      showToast('다시 만나서 반가워요. 학습을 이어서 진행해보세요.', 'success');
       startTransition(() => navigate(redirectTo, { replace: true }));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '로그인에 실패했습니다.');
+      showToast(cause instanceof Error ? cause.message : '로그인에 실패했습니다.', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -48,22 +49,22 @@ export function LoginPage() {
   return (
     <div className="auth-shell">
       <section className="auth-hero">
-        <p className="eyebrow">Premium English Learning</p>
-        <h1>구독 중인 계정만 로그인해서 학습을 이어갑니다.</h1>
+        <p className="eyebrow">English Learning</p>
+        <h1>익숙한 표현부터 차근차근 쌓아가는 학습 공간</h1>
         <p>
-          로그인 후에는 시리즈 구독 상태와 학습 기록을 기준으로 대시보드, 복습 큐,
-          설정 화면까지 이어집니다.
+          오늘의 표현을 확인하고, 직접 써보고, 다시 복습하는 흐름으로 영어를 꾸준히 이어갈 수
+          있도록 준비했습니다.
         </p>
         <div className="auth-hero-card">
-          <strong>로그인 규칙</strong>
-          <span>활성 구독이 있거나 체험 구독 기간 안에 있는 계정만 접속 가능합니다.</span>
+          <strong>오늘의 추천</strong>
+          <span>짧게라도 복습 큐를 확인하면 학습 흐름이 훨씬 안정적으로 유지됩니다.</span>
         </div>
       </section>
 
       <section className="auth-panel">
         <p className="eyebrow">Login</p>
         <h2>로그인</h2>
-        <p className="muted">가입한 이메일과 비밀번호로 로그인하세요.</p>
+        <p className="muted">가입한 이메일과 비밀번호를 입력해주세요.</p>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <label>
@@ -89,8 +90,6 @@ export function LoginPage() {
               value={form.password}
             />
           </label>
-
-          {error ? <p className="form-error">{error}</p> : null}
 
           <button className="button primary wide" disabled={isSubmitting} type="submit">
             {isSubmitting ? '로그인 중...' : '로그인'}

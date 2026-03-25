@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useToast } from '../app/ToastContext';
 import { ErrorPanel, LoadingPanel } from '../components/StatePanels';
 import { useRemoteData } from '../hooks/useRemoteData';
 import { contentService } from '../services/contentService';
@@ -14,6 +15,7 @@ const reviewOptions: Array<{ label: string; result: ReviewResult; subtitle: stri
 
 export function LearningPage() {
   const { itemId = '' } = useParams();
+  const { showToast } = useToast();
   const { data, error, loading, reload } = useRemoteData(
     () => contentService.getLearningItem(itemId),
     [itemId],
@@ -22,7 +24,6 @@ export function LearningPage() {
   const [answerResult, setAnswerResult] = useState<CheckAnswerResponse | null>(null);
   const [sentence, setSentence] = useState('');
   const [favorite, setFavorite] = useState(false);
-  const [message, setMessage] = useState('');
   const [reviewResult, setReviewResult] = useState<ReviewResult | null>(null);
 
   if (loading) {
@@ -44,9 +45,9 @@ export function LearningPage() {
     try {
       const response = await contentService.checkAnswer(itemId, answer);
       setAnswerResult(response);
-      setMessage(response.isCorrect ? '정답입니다.' : '오답입니다. 정답을 확인해보세요.');
+      showToast(response.isCorrect ? '정답입니다.' : '오답입니다. 정답을 확인해보세요.', response.isCorrect ? 'success' : 'error');
     } catch (cause) {
-      setMessage(cause instanceof Error ? cause.message : '정답 확인에 실패했습니다.');
+      showToast(cause instanceof Error ? cause.message : '정답 확인에 실패했습니다.', 'error');
     }
   };
 
@@ -63,9 +64,9 @@ export function LearningPage() {
         ? await contentService.unfavoriteItem(itemId)
         : await contentService.favoriteItem(itemId);
       setFavorite(response.isFavorited);
-      setMessage(response.isFavorited ? '즐겨찾기에 저장했습니다.' : '즐겨찾기에서 제거했습니다.');
+      showToast(response.isFavorited ? '즐겨찾기에 저장했습니다.' : '즐겨찾기에서 제거했습니다.', 'success');
     } catch (cause) {
-      setMessage(cause instanceof Error ? cause.message : '즐겨찾기 처리에 실패했습니다.');
+      showToast(cause instanceof Error ? cause.message : '즐겨찾기 처리에 실패했습니다.', 'error');
     }
   };
 
@@ -73,9 +74,9 @@ export function LearningPage() {
     try {
       const response = await contentService.submitReview(itemId, result);
       setReviewResult(result);
-      setMessage(`복습 결과가 저장되었습니다. 다음 복습은 ${new Date(response.nextReviewAt).toLocaleDateString('ko-KR')} 입니다.`);
+      showToast(`복습 결과가 저장되었습니다. 다음 복습은 ${new Date(response.nextReviewAt).toLocaleDateString('ko-KR')} 입니다.`, 'success');
     } catch (cause) {
-      setMessage(cause instanceof Error ? cause.message : '복습 저장에 실패했습니다.');
+      showToast(cause instanceof Error ? cause.message : '복습 저장에 실패했습니다.', 'error');
     }
   };
 
@@ -178,8 +179,6 @@ export function LearningPage() {
           </div>
         </section>
       </section>
-
-      {message ? <p className="muted">{message}</p> : null}
 
       <footer className="review-action-bar">
         {reviewOptions.map((option) => (

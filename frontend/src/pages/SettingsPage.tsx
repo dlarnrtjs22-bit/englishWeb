@@ -1,5 +1,6 @@
 import { startTransition, useEffect, useState } from 'react';
 import { useAuth } from '../app/AuthContext';
+import { useToast } from '../app/ToastContext';
 import { ErrorPanel, LoadingPanel } from '../components/StatePanels';
 import { useRemoteData } from '../hooks/useRemoteData';
 import { contentService } from '../services/contentService';
@@ -30,12 +31,12 @@ const notificationFields = [
 
 export function SettingsPage() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const settingsQuery = useRemoteData(() => contentService.getSettings(), []);
   const subscriptionQuery = useRemoteData(() => contentService.getMySubscription(), []);
   const billingQuery = useRemoteData(() => contentService.getBillingTransactions(), []);
 
   const [form, setForm] = useState<FormState | null>(null);
-  const [message, setMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -71,7 +72,6 @@ export function SettingsPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    setMessage('');
 
     const payload: UpdateSettingsPayload = {
       notifications: {
@@ -95,10 +95,10 @@ export function SettingsPage() {
       const updated = await contentService.updateSettings(payload);
       startTransition(() => {
         setForm(toFormState(updated, form.targetLanguage));
-        setMessage('설정이 저장되었습니다.');
       });
+      showToast('설정이 저장되었습니다.', 'success');
     } catch (cause) {
-      setMessage(cause instanceof Error ? cause.message : '설정 저장에 실패했습니다.');
+      showToast(cause instanceof Error ? cause.message : '설정 저장에 실패했습니다.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -117,7 +117,7 @@ export function SettingsPage() {
         <div className="split-line">
           <div>
             <p className="eyebrow">Subscription</p>
-            <h3>구독 상태</h3>
+            <h3>구독 정보</h3>
           </div>
           <span>{subscription.planName}</span>
         </div>
@@ -270,8 +270,6 @@ export function SettingsPage() {
           )}
         </div>
       </section>
-
-      {message ? <p className="muted">{message}</p> : null}
 
       <div className="footer-actions">
         <button className="button primary" disabled={isSaving} onClick={() => void handleSave()} type="button">
