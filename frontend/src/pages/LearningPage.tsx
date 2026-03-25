@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useToast } from '../app/ToastContext';
 import { ErrorPanel, LoadingPanel } from '../components/StatePanels';
 import { useRemoteData } from '../hooks/useRemoteData';
@@ -7,14 +7,19 @@ import { contentService } from '../services/contentService';
 import type { CheckAnswerResponse, ReviewResult } from '../types/models';
 
 const reviewOptions: Array<{ label: string; result: ReviewResult; subtitle: string }> = [
+  { label: '1분 후', result: 'minute', subtitle: '1분' },
   { label: '다시', result: 'again', subtitle: '1일' },
   { label: '어려움', result: 'hard', subtitle: '2일' },
   { label: '좋음', result: 'good', subtitle: '4일' },
   { label: '쉬움', result: 'easy', subtitle: '7일' },
+  { label: '1달', result: 'month', subtitle: '30일' },
+  { label: '1년', result: 'year', subtitle: '365일' },
+  { label: '제외', result: 'exclude', subtitle: '목록 이동' },
 ];
 
 export function LearningPage() {
   const { itemId = '' } = useParams();
+  const navigate = useNavigate();
   const { showToast } = useToast();
   const { data, error, loading, reload } = useRemoteData(
     () => contentService.getLearningItem(itemId),
@@ -36,26 +41,35 @@ export function LearningPage() {
         actionLabel="다시 시도"
         message={error ?? '학습 카드를 찾을 수 없습니다.'}
         onAction={() => void reload()}
-        title="학습 화면을 준비할 수 없습니다."
+        title="학습 화면을 불러오지 못했습니다."
       />
     );
   }
 
-  const handleReveal = async () => {
+  const answerCard = answerResult
+    ? {
+        sentence: answerResult.exampleSentence,
+        text: answerResult.correctAnswer,
+        translation: answerResult.exampleTranslation,
+      }
+    : null;
+
+  const speak = (text: string) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.95;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleCheckAnswer = async () => {
     try {
       const response = await contentService.checkAnswer(itemId, answer);
       setAnswerResult(response);
-      showToast(response.isCorrect ? '정답입니다.' : '오답입니다. 정답을 확인해보세요.', response.isCorrect ? 'success' : 'error');
+      showToast(response.isCorrect ? '정답입니다.' : '정답을 확인해보세요.', response.isCorrect ? 'success' : 'error');
     } catch (cause) {
       showToast(cause instanceof Error ? cause.message : '정답 확인에 실패했습니다.', 'error');
     }
-  };
-
-  const handleSpeak = () => {
-    const utterance = new SpeechSynthesisUtterance(data.targetText);
-    utterance.lang = 'en-US';
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
   };
 
   const handleFavorite = async () => {
@@ -64,9 +78,9 @@ export function LearningPage() {
         ? await contentService.unfavoriteItem(itemId)
         : await contentService.favoriteItem(itemId);
       setFavorite(response.isFavorited);
-      showToast(response.isFavorited ? '즐겨찾기에 저장했습니다.' : '즐겨찾기에서 제거했습니다.', 'success');
+      showToast(response.isFavorited ? '저장한 표현에 추가했습니다.' : '저장한 표현에서 제거했습니다.', 'success');
     } catch (cause) {
-      showToast(cause instanceof Error ? cause.message : '즐겨찾기 처리에 실패했습니다.', 'error');
+      showToast(cause instanceof Error ? cause.message : '표현 저장 처리에 실패했습니다.', 'error');
     }
   };
 
@@ -74,24 +88,36 @@ export function LearningPage() {
     try {
       const response = await contentService.submitReview(itemId, result);
       setReviewResult(result);
-      showToast(`복습 결과가 저장되었습니다. 다음 복습은 ${new Date(response.nextReviewAt).toLocaleDateString('ko-KR')} 입니다.`, 'success');
+      showToast(
+        result === 'exclude'
+          ? '복습 목록에서 제외했습니다.'
+          : `복습 결과를 저장했습니다. 다음 복습은 ${response.nextReviewAt ? new Date(response.nextReviewAt).toLocaleString('ko-KR') : '-'} 입니다.`,
+        'success',
+      );
+
+      if (response.nextItemId) {
+        navigate(`/learning/${response.nextItemId}`, { replace: true });
+        return;
+      }
+
+      navigate('/reviews', { replace: true });
     } catch (cause) {
       showToast(cause instanceof Error ? cause.message : '복습 저장에 실패했습니다.', 'error');
     }
   };
 
   return (
-    <div className="learning-page">
-      <header className="learning-topbar">
+    <div className="learning-workspace">
+      <header className="learning-topbar compact">
         <div className="learning-topbar-copy">
           <p className="eyebrow">Meaning &amp; Context</p>
-          <h3>오늘의 핵심 표현 복습</h3>
+          <h3>핵심 표현 학습</h3>
         </div>
         <div className="learning-progress">
           <div className="split-line">
             <span>Progress</span>
             <strong>
-              {data.progress.current} / {data.progress.total} items
+              {data.progress.current} / {data.progress.total}
             </strong>
           </div>
           <div className="progress-track">
@@ -103,87 +129,104 @@ export function LearningPage() {
         </div>
       </header>
 
-      <section className="learning-card">
-        <div className="center-copy">
-          <p className="eyebrow">Meaning &amp; Context</p>
-          <h1>{data.sourceText}</h1>
-          <p>{data.nuanceNote}</p>
-        </div>
+      <section className="learning-main-row">
+        <article className="learning-panel learning-half">
+          <div className="learning-head-copy">
+            <h1>{data.sourceText}</h1>
+            <p>{data.nuanceNote}</p>
+          </div>
 
-        <label className="field-block">
-          영어 표현을 직접 입력해보세요
+          <div className="split-line">
+            <h3>정답 입력</h3>
+            <button
+              className={`icon-button bordered${favorite ? ' active' : ''}`}
+              onClick={() => void handleFavorite()}
+              type="button"
+            >
+              <span className="material-symbols-outlined">bookmark</span>
+            </button>
+          </div>
+
           <textarea
+            className="answer-input"
             onChange={(event) => setAnswer(event.target.value)}
-            placeholder="예: doze off"
-            rows={2}
+            rows={5}
             value={answer}
           />
-        </label>
 
-        <div className="actions-row">
-          <button className="button primary" onClick={() => void handleReveal()} type="button">
+          <button className="button primary wide" onClick={() => void handleCheckAnswer()} type="button">
             정답 확인
           </button>
-          <button
-            className={`icon-button bordered${favorite ? ' active' : ''}`}
-            onClick={() => void handleFavorite()}
-            type="button"
-          >
-            <span className="material-symbols-outlined">bookmark</span>
-          </button>
-        </div>
+        </article>
 
-        {answerResult ? (
-          <section className={`answer-panel${answerResult.isCorrect ? ' success' : ''}`}>
-            <div>
-              <p className="eyebrow">Answer</p>
-              <h3>{answerResult.correctAnswer}</h3>
-              <p>{answerResult.isCorrect ? '정답입니다. 표현 감각이 좋습니다.' : answerResult.exampleSentence}</p>
-            </div>
-            <button className="icon-button" onClick={handleSpeak} type="button">
-              <span className="material-symbols-outlined">volume_up</span>
-            </button>
-          </section>
-        ) : null}
-
-        <section className="practice-panel">
+        <article className={`learning-panel learning-half answer-card${answerResult?.isCorrect ? ' success' : ''}${!answerCard ? ' answer-card-hidden' : ''}`}>
           <div className="split-line">
             <div>
-              <p className="eyebrow">Sentence Practice</p>
-              <h3>내 문장 만들기</h3>
+              <p className="eyebrow">Answer</p>
+              <h3>{answerCard ? answerCard.text : '정답 확인 후 표시됩니다.'}</h3>
             </div>
-            <button className="button secondary" onClick={handleSpeak} type="button">
-              발음 듣기
+            <button
+              className="icon-button"
+              disabled={!answerCard}
+              onClick={() => answerCard ? speak(answerCard.text) : undefined}
+              type="button"
+            >
+              <span className="material-symbols-outlined">volume_up</span>
             </button>
           </div>
 
-          <textarea
-            onChange={(event) => setSentence(event.target.value)}
-            placeholder="이 표현을 사용해서 문장을 만들어보세요."
-            rows={4}
-            value={sentence}
-          />
-
-          <div className="ai-feedback">
-            <div className="icon-badge mint">
-              <span className="material-symbols-outlined">auto_awesome</span>
+          <div className="example-block">
+            <div className="split-line">
+              <strong>Example</strong>
+              <button
+                className="icon-button"
+                disabled={!answerCard}
+                onClick={() => answerCard ? speak(answerCard.sentence) : undefined}
+                type="button"
+              >
+                <span className="material-symbols-outlined">volume_up</span>
+              </button>
             </div>
-            <div>
-              <strong>AI 피드백</strong>
-              <p>
-                {sentence.trim().length > 0
-                  ? data.aiFeedback
-                  : '문장을 입력하면 다음 단계에서 실제 첨삭 API와 연결할 수 있도록 구조를 유지해두었습니다.'}
-              </p>
-            </div>
+            <p className="example-text">{answerCard ? answerCard.sentence : '정답 확인 후 예문이 표시됩니다.'}</p>
+            <p className="example-translation">{answerCard ? answerCard.translation : '해석도 함께 표시됩니다.'}</p>
           </div>
-        </section>
+        </article>
       </section>
 
-      <footer className="review-action-bar">
+      <section className="learning-panel sentence-panel">
+        <div className="split-line">
+          <div>
+            <p className="eyebrow">Sentence Practice</p>
+            <h3>내 문장 만들기</h3>
+          </div>
+        </div>
+
+        <textarea
+          onChange={(event) => setSentence(event.target.value)}
+          placeholder="표현을 사용해서 직접 문장을 만들어보세요."
+          rows={4}
+          value={sentence}
+        />
+
+        <div className="ai-feedback">
+          <div className="icon-badge mint">
+            <span className="material-symbols-outlined">auto_awesome</span>
+          </div>
+          <div>
+            <strong>AI 문장 피드백</strong>
+            <p>
+              {sentence.trim().length > 0
+                ? data.aiFeedback
+                : '문장을 입력하면 여기에서 피드백을 이어갈 수 있습니다.'}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <footer className="review-action-bar learning-review-bar">
         {reviewOptions.map((option) => (
           <button
-            className={`review-pill${reviewResult === option.result ? ' active' : ''}`}
+            className={`review-pill review-pill-compact${reviewResult === option.result ? ' active' : ''}${option.result === 'exclude' ? ' exclude' : ''}`}
             key={option.result}
             onClick={() => void handleReview(option.result)}
             type="button"

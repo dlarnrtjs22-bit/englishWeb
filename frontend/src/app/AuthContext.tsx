@@ -9,16 +9,12 @@ import {
 } from 'react';
 import { authService, type LoginPayload, type SignupPayload } from '../services/authService';
 import type { AuthResponse, UserProfile } from '../types/models';
-import {
-  clearStoredSession,
-  readStoredSession,
-  writeStoredSession,
-} from '../utils/sessionStorage';
+import { clearStoredSession, readStoredSession, writeStoredSession } from '../utils/sessionStorage';
 
 interface AuthContextValue {
   isAuthenticated: boolean;
   isInitializing: boolean;
-  login: (payload: LoginPayload) => Promise<void>;
+  login: (payload: LoginPayload, rememberMe: boolean) => Promise<void>;
   logout: () => Promise<void>;
   signup: (payload: SignupPayload) => Promise<void>;
   user: UserProfile | null;
@@ -53,8 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void bootstrap();
   }, []);
 
-  const syncSession = (response: AuthResponse) => {
-    writeStoredSession(response);
+  const syncSession = (response: AuthResponse, rememberMe: boolean) => {
+    writeStoredSession(response, rememberMe);
     startTransition(() => {
       setUser(response.user);
     });
@@ -64,9 +60,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       isAuthenticated: Boolean(user),
       isInitializing,
-      async login(payload) {
+      async login(payload, rememberMe) {
         const response = await authService.login(payload);
-        syncSession(response);
+        syncSession(response, rememberMe);
       },
       async logout() {
         try {
@@ -80,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async signup(payload) {
         const response = await authService.signup(payload);
-        syncSession(response);
+        syncSession(response, true);
       },
       user,
     }),

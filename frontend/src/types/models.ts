@@ -1,4 +1,4 @@
-export type ReviewResult = 'again' | 'easy' | 'good' | 'hard';
+export type ReviewResult = 'again' | 'easy' | 'exclude' | 'good' | 'hard' | 'minute' | 'month' | 'year';
 
 export interface UserProfile {
   email: string;
@@ -89,6 +89,7 @@ export interface SeriesDetailResponse {
 export interface LearningItemResponse {
   aiFeedback: string;
   exampleSentence: string;
+  exampleTranslation: string;
   id: string;
   nuanceNote: string;
   progress: {
@@ -103,6 +104,7 @@ export interface CheckAnswerResponse {
   acceptedAnswers: string[];
   correctAnswer: string;
   exampleSentence: string;
+  exampleTranslation: string;
   isCorrect: boolean;
 }
 
@@ -114,7 +116,8 @@ export interface FavoriteToggleResponse {
 export interface ReviewScheduleResponse {
   easeFactor: number;
   intervalDays: number;
-  nextReviewAt: string;
+  nextItemId: string | null;
+  nextReviewAt: string | null;
   result: ReviewResult;
   success: boolean;
 }

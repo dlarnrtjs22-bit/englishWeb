@@ -18,7 +18,8 @@ public final class ApiResponses {
             int packCount,
             boolean isSubscribed,
             String badge
-    ) {}
+    ) {
+    }
 
     public record DashboardResponse(
             String userName,
@@ -28,11 +29,14 @@ public final class ApiResponses {
             List<SeriesSummaryDto> activeSeries,
             List<SeriesSummaryDto> recommendedSeries,
             List<StatDto> stats
-    ) {}
+    ) {
+    }
 
-    public record ReviewSummaryDto(int dueCount, String description, List<String> priorityLabels) {}
+    public record ReviewSummaryDto(int dueCount, String description, List<String> priorityLabels) {
+    }
 
-    public record StatDto(String label, String value) {}
+    public record StatDto(String label, String value) {
+    }
 
     public record SeriesPackDto(
             String id,
@@ -45,7 +49,8 @@ public final class ApiResponses {
             boolean locked,
             String statusLabel,
             String firstItemId
-    ) {}
+    ) {
+    }
 
     public record SeriesDetailResponse(
             String id,
@@ -61,9 +66,11 @@ public final class ApiResponses {
             String coachNote,
             List<String> tags,
             List<SeriesPackDto> packs
-    ) {}
+    ) {
+    }
 
-    public record LearningProgressDto(int current, int total) {}
+    public record LearningProgressDto(int current, int total) {
+    }
 
     public record LearningItemResponse(
             String id,
@@ -71,51 +78,74 @@ public final class ApiResponses {
             String targetText,
             String nuanceNote,
             String exampleSentence,
+            String exampleTranslation,
             String aiFeedback,
             LearningProgressDto progress
-    ) {}
+    ) {
+    }
 
-    public record FavoriteItemDto(String itemId, String sourceText, String targetText, String seriesTitle, String packTitle) {}
+    public record FavoriteItemDto(
+            String itemId,
+            String sourceText,
+            String targetText,
+            String seriesTitle,
+            String packTitle
+    ) {
+    }
 
-    public record FavoritesResponse(List<FavoriteItemDto> items) {}
+    public record FavoritesResponse(List<FavoriteItemDto> items) {
+    }
 
-    public record FavoriteToggleResponse(boolean success, boolean isFavorited) {}
+    public record FavoriteToggleResponse(boolean success, boolean isFavorited) {
+    }
 
     public record CheckAnswerResponse(
             boolean isCorrect,
             String correctAnswer,
             List<String> acceptedAnswers,
-            String exampleSentence
-    ) {}
+            String exampleSentence,
+            String exampleTranslation
+    ) {
+    }
 
-    public record ReviewItemDto(String itemId, String sourceText, String contextText, Integer level) {}
+    public record ReviewItemDto(String itemId, String sourceText, String contextText, Integer level) {
+    }
 
-    public record ReviewGroupDto(String seriesId, String seriesTitle, String description, List<ReviewItemDto> items) {}
+    public record ReviewGroupDto(String seriesId, String seriesTitle, String description, List<ReviewItemDto> items) {
+    }
 
-    public record ReviewSummaryCardDto(String label, String value, String caption, String icon, String variant) {}
+    public record ReviewSummaryCardDto(String label, String value, String caption, String icon, String variant) {
+    }
 
     public record ReviewQueueResponse(
             List<ReviewItemDto> items,
             List<ReviewGroupDto> groups,
             List<ReviewSummaryCardDto> summaryCards,
             List<Integer> weeklyHistory
-    ) {}
+    ) {
+    }
 
     public record ReviewScheduleResponse(
             boolean success,
             String result,
             int intervalDays,
             double easeFactor,
-            String nextReviewAt
-    ) {}
+            String nextReviewAt,
+            String nextItemId
+    ) {
+    }
 
-    public record SettingsProfileDto(String name, String email, String bio) {}
+    public record SettingsProfileDto(String name, String email, String bio) {
+    }
 
-    public record LevelOptionDto(String label, String description, boolean active) {}
+    public record LevelOptionDto(String label, String description, boolean active) {
+    }
 
-    public record ActionItemDto(String title, String description, String actionLabel) {}
+    public record ActionItemDto(String title, String description, String actionLabel) {
+    }
 
-    public record NotificationItemDto(String title, String description, boolean enabled) {}
+    public record NotificationItemDto(String title, String description, boolean enabled) {
+    }
 
     public record SettingsResponse(
             SettingsProfileDto profile,
@@ -123,5 +153,6 @@ public final class ApiResponses {
             List<LevelOptionDto> learningLevels,
             List<ActionItemDto> accountItems,
             List<NotificationItemDto> notifications
-    ) {}
+    ) {
+    }
 }

@@ -100,10 +100,13 @@
     <select id="findLearningItem" resultType="com.nativeflow.backend.content.model.LearningItemRow">
         select
             li.id::text as id,
+            li.pack_id::text as pack_id,
             li.source_text,
             li.target_text,
             li.nuance_note,
             li.example_sentence,
+            li.example_translation,
+            li.order_index as order_index,
             li.order_index as current,
             (select count(*) from learning_items same_pack where same_pack.pack_id = li.pack_id and same_pack.is_published = true) as total
         from learning_items li
@@ -140,6 +143,12 @@
         where rs.user_id = cast(#{userId} as uuid)
           and rs.next_review_at is not null
           and rs.next_review_at &lt;= now()
+          and not exists (
+              select 1
+              from excluded_learning_items ex
+              where ex.user_id = rs.user_id
+                and ex.learning_item_id = rs.learning_item_id
+          )
         order by rs.next_review_at asc
     </select>
 

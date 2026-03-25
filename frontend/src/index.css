@@ -269,6 +269,12 @@ img {
   padding: 2rem;
 }
 
+.page-learning {
+  height: calc(100vh - 96px);
+  overflow: hidden;
+  padding: 1.25rem 1.5rem 1rem;
+}
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.9fr) minmax(290px, 0.95fr);
@@ -582,6 +588,11 @@ img {
   width: 2.85rem;
 }
 
+.icon-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .icon-button.bordered {
   box-shadow: inset 0 0 0 1px var(--outline);
 }
@@ -724,6 +735,175 @@ img {
   gap: 1.5rem;
 }
 
+.learning-workspace {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 1rem;
+  height: 100%;
+  overflow: hidden;
+}
+
+.learning-main-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  min-height: 0;
+}
+
+.learning-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+  gap: 1rem;
+  min-height: 0;
+}
+
+.learning-column {
+  display: grid;
+  gap: 1rem;
+  min-height: 0;
+}
+
+.learning-panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow-soft);
+}
+
+.learning-half {
+  min-height: 0;
+}
+
+.learning-head-copy {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.learning-head-copy h1 {
+  margin: 0;
+  font-family: 'Manrope', 'Pretendard', sans-serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  letter-spacing: -0.04em;
+}
+
+.learning-head-copy p {
+  margin: 0;
+}
+
+.prompt-panel {
+  min-height: 0;
+}
+
+.prompt-panel h1 {
+  margin: 0;
+  font-family: 'Manrope', 'Pretendard', sans-serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  letter-spacing: -0.04em;
+}
+
+.compact-panel {
+  min-height: 0;
+}
+
+.answer-column {
+  align-content: start;
+}
+
+.answer-card {
+  min-height: 100%;
+  align-content: start;
+}
+
+.answer-card-hidden {
+  opacity: 0.88;
+}
+
+.answer-card.success {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(139, 241, 230, 0.22));
+}
+
+.answer-input {
+  width: 100%;
+  min-height: 8.5rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1.2rem;
+  background: var(--surface-low);
+  color: var(--text);
+  font-family: 'Inter', 'Pretendard', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  resize: none;
+  box-shadow: inset 0 0 0 1px rgba(198, 197, 212, 0.2);
+}
+
+.answer-input:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba(0, 6, 102, 0.18);
+}
+
+.example-block {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: var(--surface-low);
+}
+
+.example-text {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.02rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.example-translation {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.learning-review-bar {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0.55rem;
+  padding: 0.75rem;
+}
+
+.review-pill.exclude {
+  box-shadow: inset 0 0 0 1px rgba(186, 26, 26, 0.2);
+}
+
+.review-pill.exclude strong {
+  color: var(--error);
+}
+
+.review-pill-compact {
+  min-height: 3.1rem;
+  padding: 0.4rem 0.2rem;
+}
+
+.review-pill-compact strong {
+  font-size: 0.86rem;
+}
+
+.review-pill-compact span {
+  font-size: 0.68rem;
+}
+
+.sentence-panel {
+  gap: 0.8rem;
+}
+
+.sentence-panel textarea {
+  min-height: 4.5rem;
+  max-height: 4.5rem;
+  resize: none;
+}
+
 .learning-progress {
   min-width: 20rem;
 }
@@ -751,9 +931,37 @@ img {
   font-weight: 700;
 }
 
+.remember-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: fit-content;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.remember-field input[type='checkbox'] {
+  appearance: auto;
+  -webkit-appearance: checkbox;
+  width: 1rem;
+  height: 1rem;
+  min-width: 1rem;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  flex: 0 0 auto;
+}
+
+.remember-field span {
+  line-height: 1;
+}
+
 .field-block textarea,
 .practice-panel textarea,
-.auth-form input,
+.auth-form input:not([type='checkbox']),
 .auth-form select {
   width: 100%;
   padding: 1.1rem 1.15rem;
@@ -774,7 +982,7 @@ img {
 
 .field-block textarea:focus,
 .practice-panel textarea:focus,
-.auth-form input:focus,
+.auth-form input:not([type='checkbox']):focus,
 .auth-form select:focus {
   box-shadow: inset 0 0 0 2px rgba(0, 6, 102, 0.18);
 }
@@ -1170,7 +1378,9 @@ img {
 
   .pack-card,
   .favorite-card,
-  .series-detail-row {
+  .series-detail-row,
+  .learning-main-row,
+  .learning-body {
     grid-template-columns: 1fr;
     justify-items: start;
   }
@@ -1194,6 +1404,11 @@ img {
   .topbar,
   .page {
     padding: 1.25rem;
+  }
+
+  .page-learning {
+    height: auto;
+    overflow: visible;
   }
 
   .review-action-bar,
@@ -1266,5 +1481,9 @@ img {
 
   .review-action-bar {
     padding: 0.8rem;
+  }
+
+  .learning-review-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

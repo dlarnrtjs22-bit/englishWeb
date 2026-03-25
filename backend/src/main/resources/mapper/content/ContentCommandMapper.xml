@@ -82,6 +82,18 @@
           and learning_item_id = cast(#{itemId} as uuid)
     </delete>
 
+    <insert id="excludeItem">
+        insert into excluded_learning_items (user_id, learning_item_id, reason)
+        values (cast(#{userId} as uuid), cast(#{itemId} as uuid), 'manual')
+        on conflict (user_id, learning_item_id) do nothing
+    </insert>
+
+    <delete id="unexcludeItem">
+        delete from excluded_learning_items
+        where user_id = cast(#{userId} as uuid)
+          and learning_item_id = cast(#{itemId} as uuid)
+    </delete>
+
     <insert id="upsertReviewSchedule">
         insert into review_schedules (
             user_id,
@@ -169,5 +181,40 @@
         join series s on s.id = p.series_id
         where li.id = cast(#{itemId} as uuid)
         limit 1
+    </select>
+
+    <select id="findNextLearningItemId" resultType="string">
+        with current_item as (
+            select li.id, li.pack_id, li.order_index, p.series_id
+            from learning_items li
+            join packs p on p.id = li.pack_id
+            where li.id = cast(#{itemId} as uuid)
+        ),
+        next_in_pack as (
+            select li.id::text as next_id
+            from learning_items li
+            join current_item ci on ci.pack_id = li.pack_id
+            where li.is_published = true
+              and li.order_index > ci.order_index
+            order by li.order_index asc
+            limit 1
+        ),
+        next_in_series as (
+            select li.id::text as next_id
+            from current_item ci
+            join packs p on p.series_id = ci.series_id
+            join learning_items li on li.pack_id = p.id
+            where li.is_published = true
+              and (
+                    p.order_index > (select p2.order_index from packs p2 where p2.id = ci.pack_id)
+                 or (p.order_index = (select p2.order_index from packs p2 where p2.id = ci.pack_id) and li.order_index > ci.order_index)
+              )
+            order by p.order_index asc, li.order_index asc
+            limit 1
+        )
+        select coalesce(
+            (select next_id from next_in_pack),
+            (select next_id from next_in_series)
+        )
     </select>
 </mapper>

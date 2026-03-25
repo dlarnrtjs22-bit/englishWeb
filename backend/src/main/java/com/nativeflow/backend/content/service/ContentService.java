@@ -35,7 +35,12 @@ public class ContentService {
         List<SeriesCardRow> allSeries = contentQueryMapper.findSeriesCards(userId);
         DashboardStatsRow stats = contentQueryMapper.findDashboardStats(userId);
 
-        List<ApiResponses.SeriesSummaryDto> recommended = allSeries.stream()
+        List<ApiResponses.SeriesSummaryDto> activeSeries = subscribed.stream()
+                .limit(2)
+                .map(row -> toSeriesSummary(row, deriveSubtitle(row), null))
+                .toList();
+
+        List<ApiResponses.SeriesSummaryDto> recommendedSeries = allSeries.stream()
                 .filter(row -> !row.isSubscribed())
                 .limit(3)
                 .map(row -> toSeriesSummary(row, deriveSubtitle(row), "Business English".equals(row.getTitle()) ? "Premium" : null))
@@ -43,17 +48,17 @@ public class ContentService {
 
         return new ApiResponses.DashboardResponse(
                 userName,
-                Math.min(100, stats.getDueCount() == 0 ? 0 : 65),
-                subscribed.isEmpty() ? "먼저 시리즈를 구독해서 학습 흐름을 시작해보세요." : "오늘 학습 흐름을 이어갈 준비가 되어 있습니다.",
+                activeSeries.isEmpty() ? 0 : 65,
+                activeSeries.isEmpty() ? "먼저 오늘의 시리즈를 하나 골라보세요." : "이어서 학습할 준비가 되어 있습니다.",
                 new ApiResponses.ReviewSummaryDto(
                         stats.getDueCount(),
-                        stats.getDueCount() > 0 ? "복습이 필요한 표현이 준비되어 있습니다." : "지금은 복습 대기 항목이 없습니다.",
+                        stats.getDueCount() > 0 ? "오늘 복습할 표현이 준비되어 있습니다." : "지금은 복습 대기 항목이 없습니다.",
                         stats.getDueCount() > 0
-                                ? List.of("오늘 처리할 복습 항목", "학습 후 다시 큐에 반영됩니다.")
-                                : List.of("복습 큐가 비어 있습니다.", "새 학습을 시작해 데이터를 쌓아보세요.")
+                                ? List.of("복습 큐부터 시작해보세요.", "완료 후 다음 표현으로 이어집니다.")
+                                : List.of("새 표현을 학습하면 복습 큐가 채워집니다.", "가볍게 한 문제부터 시작해보세요.")
                 ),
-                subscribed.stream().limit(2).map(row -> toSeriesSummary(row, deriveSubtitle(row), null)).toList(),
-                recommended,
+                activeSeries,
+                recommendedSeries,
                 List.of(
                         new ApiResponses.StatDto("Total Streak", stats.getDueCount() > 0 ? "1일" : "0일"),
                         new ApiResponses.StatDto("Vocabulary", stats.getReviewedDistinctCount() + "개")
@@ -79,10 +84,10 @@ public class ContentService {
                 detail.getThumbnailUrl(),
                 "NativeFlow Coach",
                 inferLevel(detail.getCategoryLabel()),
-                "2026.03.24",
+                "2026.03.25",
                 detail.getProgress(),
-                packs.isEmpty() ? "아직 등록된 학습 유닛이 없습니다." : "학습 유닛을 선택해 바로 시작할 수 있습니다.",
-                "표현 중심 학습 흐름으로 구성된 시리즈입니다.",
+                packs.isEmpty() ? "아직 학습 유닛이 없습니다." : "유닛을 선택하면 바로 학습을 시작할 수 있습니다.",
+                "표현을 이해하고 직접 써보는 흐름으로 구성했습니다.",
                 buildTags(detail.getCategoryLabel()),
                 packs.stream()
                         .map(pack -> new ApiResponses.SeriesPackDto(
@@ -110,7 +115,8 @@ public class ContentService {
                 row.getTargetText(),
                 row.getNuanceNote(),
                 row.getExampleSentence(),
-                "AI 첨삭은 다음 단계에서 실제 LLM 피드백과 연결됩니다.",
+                row.getExampleTranslation(),
+                "문장을 직접 만들어보며 표현을 익혀보세요.",
                 new ApiResponses.LearningProgressDto(row.getCurrent(), row.getTotal())
         );
     }
@@ -131,7 +137,8 @@ public class ContentService {
                 isCorrect,
                 row.getTargetText(),
                 acceptedAnswers,
-                row.getExampleSentence()
+                row.getExampleSentence(),
+                row.getExampleTranslation()
         );
     }
 
@@ -152,6 +159,7 @@ public class ContentService {
 
     public ApiResponses.FavoriteToggleResponse favoriteItem(String userId, String itemId) {
         contentCommandMapper.favoriteItem(userId, itemId);
+        contentCommandMapper.unexcludeItem(userId, itemId);
         return new ApiResponses.FavoriteToggleResponse(true, true);
     }
 
@@ -165,7 +173,7 @@ public class ContentService {
         List<ReviewHistoryRow> historyRows = contentQueryMapper.findReviewHistory(userId);
         int dueCount = dueItems.size();
 
-        List<ApiResponses.ReviewItemDto> itemDtos = dueItems.stream()
+        List<ApiResponses.ReviewItemDto> items = dueItems.stream()
                 .map(item -> new ApiResponses.ReviewItemDto(item.getItemId(), item.getSourceText(), item.getContextText(), 1))
                 .toList();
 
@@ -173,21 +181,18 @@ public class ContentService {
         dueItems.stream()
                 .map(ReviewQueueRow::getSeriesTitle)
                 .distinct()
-                .forEach(seriesTitle -> {
-                    List<ApiResponses.ReviewItemDto> groupItems = dueItems.stream()
-                            .filter(item -> seriesTitle.equals(item.getSeriesTitle()))
-                            .map(item -> new ApiResponses.ReviewItemDto(item.getItemId(), item.getSourceText(), item.getContextText(), 1))
-                            .toList();
-                    groups.add(new ApiResponses.ReviewGroupDto(
-                            seriesTitle.toLowerCase().replace(" ", "-"),
-                            seriesTitle,
-                            seriesTitle + " 복습 큐",
-                            groupItems
-                    ));
-                });
+                .forEach(seriesTitle -> groups.add(new ApiResponses.ReviewGroupDto(
+                        seriesTitle.toLowerCase().replace(" ", "-"),
+                        seriesTitle,
+                        seriesTitle + " 복습 큐",
+                        dueItems.stream()
+                                .filter(item -> seriesTitle.equals(item.getSeriesTitle()))
+                                .map(item -> new ApiResponses.ReviewItemDto(item.getItemId(), item.getSourceText(), item.getContextText(), 1))
+                                .toList()
+                )));
 
         return new ApiResponses.ReviewQueueResponse(
-                itemDtos,
+                items,
                 groups,
                 List.of(
                         new ApiResponses.ReviewSummaryCardDto("오늘 복습 예정", dueCount + "개", "오늘 처리할 복습 수", "alarm", "warning"),
@@ -199,38 +204,75 @@ public class ContentService {
     }
 
     public ApiResponses.ReviewScheduleResponse submitReview(String userId, String itemId, String result) {
-        int intervalDays = switch (result) {
+        String normalizedResult = result.trim().toLowerCase();
+        int intervalDays = switch (normalizedResult) {
             case "again" -> 1;
+            case "minute" -> 0;
             case "hard" -> 2;
             case "good" -> 4;
             case "easy" -> 7;
+            case "month" -> 30;
+            case "year" -> 365;
+            case "exclude" -> 0;
             default -> 1;
         };
-        double easeFactor = switch (result) {
+        double easeFactor = switch (normalizedResult) {
             case "again" -> 2.1;
+            case "minute" -> 2.2;
             case "hard" -> 2.3;
             case "good" -> 2.5;
             case "easy" -> 2.7;
+            case "month" -> 3.0;
+            case "year" -> 3.2;
+            case "exclude" -> 0.0;
             default -> 2.5;
         };
-        int repetitionCount = switch (result) {
+        int repetitionCount = switch (normalizedResult) {
             case "again" -> 0;
+            case "minute" -> 0;
             case "hard" -> 1;
             case "good" -> 2;
             case "easy" -> 3;
+            case "month" -> 4;
+            case "year" -> 5;
+            case "exclude" -> 0;
             default -> 1;
         };
-        OffsetDateTime nextReviewAt = OffsetDateTime.now().plusDays(intervalDays);
 
-        contentCommandMapper.upsertReviewSchedule(userId, itemId, result, intervalDays, repetitionCount, easeFactor, nextReviewAt);
-        contentCommandMapper.insertReviewLog(userId, itemId, result, intervalDays, easeFactor);
+        if ("exclude".equals(normalizedResult)) {
+            contentCommandMapper.excludeItem(userId, itemId);
+            return new ApiResponses.ReviewScheduleResponse(
+                    true,
+                    normalizedResult,
+                    0,
+                    0.0,
+                    null,
+                    contentCommandMapper.findNextLearningItemId(itemId)
+            );
+        }
+
+        contentCommandMapper.unexcludeItem(userId, itemId);
+        OffsetDateTime nextReviewAt = "minute".equals(normalizedResult)
+                ? OffsetDateTime.now().plusMinutes(1)
+                : OffsetDateTime.now().plusDays(intervalDays);
+
+        contentCommandMapper.upsertReviewSchedule(userId, itemId, normalizedResult, intervalDays, repetitionCount, easeFactor, nextReviewAt);
+        contentCommandMapper.insertReviewLog(userId, itemId, normalizedResult, intervalDays, easeFactor);
         syncSeriesProgress(userId, itemId);
 
-        return new ApiResponses.ReviewScheduleResponse(true, result, intervalDays, easeFactor, nextReviewAt.toString());
+        return new ApiResponses.ReviewScheduleResponse(
+                true,
+                normalizedResult,
+                intervalDays,
+                easeFactor,
+                nextReviewAt.toString(),
+                contentCommandMapper.findNextLearningItemId(itemId)
+        );
     }
 
     public void subscribeStarterSeries(String userId) {
         String starterSeriesId = contentCommandMapper.findSeriesIdBySlug("everyday-english");
+
         if (starterSeriesId != null) {
             contentCommandMapper.subscribeSeries(userId, starterSeriesId);
             contentCommandMapper.ensureSeriesProgress(userId, starterSeriesId);
@@ -240,6 +282,7 @@ public class ContentService {
 
     private void syncSeriesProgress(String userId, String itemId) {
         String seriesId = contentCommandMapper.findSeriesIdByLearningItem(itemId);
+
         if (seriesId != null) {
             contentCommandMapper.ensureSeriesProgress(userId, seriesId);
             contentCommandMapper.updateSeriesProgressCounts(userId, seriesId);
@@ -274,10 +317,17 @@ public class ContentService {
     }
 
     private List<String> buildTags(String categoryLabel) {
-        return List.of(categoryLabel, "표현 중심", "구독 학습", "한국어 해설");
+        return List.of(categoryLabel, "표현 중심", "반복 학습", "한국어 해설");
     }
 
     private String normalizeAnswer(String value) {
-        return value == null ? "" : value.trim().toLowerCase().replaceAll("\\s+", " ");
+        if (value == null) {
+            return "";
+        }
+
+        return value.trim()
+                .toLowerCase()
+                .replaceAll("[.?!,;:]+$", "")
+                .replaceAll("\\s+", " ");
     }
 }

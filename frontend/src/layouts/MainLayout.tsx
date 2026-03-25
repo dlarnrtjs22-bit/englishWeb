@@ -22,20 +22,21 @@ export function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const isLearningRoute = location.pathname.startsWith('/learning/');
   const title =
     pageTitles[location.pathname] ??
-    (location.pathname.startsWith('/series/') ? '시리즈 상세' : '학습 화면');
+    (location.pathname.startsWith('/series/') ? '시리즈 상세' : isLearningRoute ? '학습 화면' : '학습');
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <p className="eyebrow">Premium English Learning</p>
+          <p className="eyebrow">English Learning</p>
           <h1>NativeFlow</h1>
-          <p className="muted">한국어 감각으로 익히는 프리미엄 영어 루틴</p>
+          <p className="muted">표현을 익히고, 직접 써보고, 다시 복습하는 학습 흐름</p>
         </div>
 
-        <nav className="sidebar-nav" aria-label="주요 메뉴">
+        <nav aria-label="주요 메뉴" className="sidebar-nav">
           {navigationItems.map((item) => (
             <NavLink
               className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
@@ -54,8 +55,8 @@ export function MainLayout() {
           <div className="profile-chip">
             <div className="avatar-badge">{user?.name.slice(0, 1) ?? 'N'}</div>
             <div>
-              <strong>{user?.name ?? '게스트'}</strong>
-              <p>{user?.membershipLabel ?? 'Premium Member'}</p>
+              <strong>{user?.name ?? '사용자'}</strong>
+              <p>{user?.membershipLabel ?? 'Standard Monthly'}</p>
             </div>
           </div>
           <button className="button primary wide" onClick={() => navigate('/reviews')} type="button">
@@ -67,7 +68,7 @@ export function MainLayout() {
       <div className="shell-main">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Academic Curator Workspace</p>
+            <p className="eyebrow">Learning Workspace</p>
             <h2>{title}</h2>
           </div>
 
@@ -88,11 +89,11 @@ export function MainLayout() {
           </div>
         </header>
 
-        <main className="page">
+        <main className={`page${isLearningRoute ? ' page-learning' : ''}`}>
           <Outlet />
         </main>
 
-        <nav className="mobile-nav" aria-label="모바일 메뉴">
+        <nav aria-label="모바일 메뉴" className="mobile-nav">
           {navigationItems.map((item) => (
             <NavLink
               className={({ isActive }) => `mobile-nav-item${isActive ? ' active' : ''}`}
