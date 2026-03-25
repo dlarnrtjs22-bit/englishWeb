@@ -87,14 +87,15 @@ export function LoginPage() {
             />
           </label>
 
-          <div className="remember-row">
-            <label className="remember-field">
+          <div className="remember-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+            <label className="remember-field" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', margin: 0 }}>
               <input
                 checked={form.rememberMe}
                 onChange={(event) => setForm((prev) => ({ ...prev, rememberMe: event.target.checked }))}
                 type="checkbox"
+                style={{ margin: 0 }}
               />
-              <span>로그인 상태 유지</span>
+              <span style={{ margin: 0 }}>로그인 상태 유지</span>
             </label>
           </div>
 

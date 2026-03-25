@@ -114,7 +114,7 @@ export function LearningPage() {
   };
 
   return (
-    <div className="learning-workspace">
+    <div className="learning-workspace mobile-fit-learning">
       <header className="learning-topbar compact">
         <div className="learning-topbar-copy">
           <p className="eyebrow">Meaning &amp; Context</p>
@@ -128,121 +128,134 @@ export function LearningPage() {
             </strong>
           </div>
           <div className="progress-track">
-            <span className="progress-fill" style={{ width: `${(data.progress.current / data.progress.total) * 100}%` }} />
+            <span
+              className="progress-fill"
+              style={{ width: `${(data.progress.current / data.progress.total) * 100}%` }}
+            />
           </div>
         </div>
       </header>
 
-      <div className="learning-scroll-area">
-        <section
-          className="learning-main-row"
-          style={{
-            alignItems: 'stretch',
-            display: 'grid',
-            gap: '1rem',
-            gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) minmax(0, 1fr)',
-          }}
-        >
-          <article className="learning-panel learning-half">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'hidden', paddingInline: '0.2rem', minHeight: 0 }}>
+        <section className="learning-main-row" style={{ flexShrink: 0, justifyItems: 'stretch', width: '100%', alignItems: 'stretch' }}>
+          <article className="learning-panel learning-half" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             <div className="learning-head-copy">
-              <h1>{data.sourceText}</h1>
-              <p>{data.nuanceNote}</p>
+              <h1 style={{ fontSize: '1.6rem', marginBottom: '0.3rem' }}>{data.sourceText}</h1>
+              <p style={{ fontSize: '0.9rem' }}>{data.nuanceNote}</p>
             </div>
 
             <div className="split-line">
-              <h3>정답 입력</h3>
-              <button className={`icon-button bordered${favorite ? ' active' : ''}`} onClick={() => void handleFavorite()} type="button">
-                <span className="material-symbols-outlined">bookmark</span>
+              <h3 style={{ fontSize: '1.05rem', margin: 0 }}>정답 입력</h3>
+              <button
+                className={`icon-button bordered${favorite ? ' active' : ''}`}
+                onClick={() => void handleFavorite()}
+                type="button"
+                style={{ width: '2.2rem', minHeight: '2.2rem' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>bookmark</span>
               </button>
             </div>
 
-            <textarea className="answer-input" onChange={(event) => setAnswer(event.target.value)} rows={4} value={answer} />
+            <textarea
+              className="answer-input"
+              onChange={(event) => setAnswer(event.target.value)}
+              rows={4}
+              value={answer}
+              style={{ minHeight: '5rem', fontSize: '0.95rem', padding: '0.75rem' }}
+            />
 
-            <button className="button primary wide" onClick={() => void handleCheckAnswer()} type="button">
+            <button className="button primary wide" onClick={() => void handleCheckAnswer()} type="button" style={{ padding: '0.6rem', fontSize: '0.95rem' }}>
               정답 확인
             </button>
           </article>
 
-          <article className={`learning-panel learning-half answer-card${answerResult?.isCorrect ? ' success' : ''}${!answerCard ? ' answer-card-hidden' : ''}`}>
+          <article className={`learning-panel learning-half answer-card${answerResult?.isCorrect ? ' success' : ''}${!answerCard ? ' answer-card-hidden' : ''}`} style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             <div className="split-line">
               <div>
-                <p className="eyebrow">Answer</p>
-                <h3>{answerCard ? answerCard.text : '정답 확인 후 표시됩니다.'}</h3>
+                <p className="eyebrow" style={{ fontSize: '0.65rem' }}>Answer</p>
+                <h3 style={{ fontSize: '1.05rem', margin: 0 }}>{answerCard ? answerCard.text : '정답 확인 후 표시됩니다.'}</h3>
               </div>
-              <button className="icon-button" disabled={!answerCard} onClick={() => answerCard ? speak(answerCard.text) : undefined} type="button">
-                <span className="material-symbols-outlined">volume_up</span>
+              <button
+                className="icon-button"
+                disabled={!answerCard}
+                onClick={() => answerCard ? speak(answerCard.text) : undefined}
+                type="button"
+                style={{ width: '2.2rem', minHeight: '2.2rem' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>volume_up</span>
               </button>
             </div>
 
-            <div className="example-block">
+            <div className="example-block" style={{ padding: '0.8rem', gap: '0.5rem', flex: 1 }}>
               <div className="split-line">
-                <strong>Example</strong>
-                <button className="icon-button" disabled={!answerCard} onClick={() => answerCard ? speak(answerCard.sentence) : undefined} type="button">
-                  <span className="material-symbols-outlined">volume_up</span>
+                <strong style={{ fontSize: '0.9rem' }}>Example</strong>
+                <button
+                  className="icon-button"
+                  disabled={!answerCard}
+                  onClick={() => answerCard ? speak(answerCard.sentence) : undefined}
+                  type="button"
+                  style={{ width: '1.8rem', minHeight: '1.8rem', background: 'transparent', boxShadow: 'none' }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '1rem', color: 'var(--muted)' }}>volume_up</span>
                 </button>
               </div>
-              <p className="example-text">{answerCard ? answerCard.sentence : '정답 확인 후 예문이 표시됩니다.'}</p>
-              <p className="example-translation">{answerCard ? answerCard.translation : '해석도 함께 표시됩니다.'}</p>
+              <p className="example-text" style={{ fontSize: '0.9rem' }}>{answerCard ? answerCard.sentence : '정답 확인 후 예문이 표시됩니다.'}</p>
+              <p className="example-translation" style={{ fontSize: '0.85rem' }}>{answerCard ? answerCard.translation : '해석도 함께 표시됩니다.'}</p>
             </div>
           </article>
         </section>
 
-        <section
-          className="learning-panel sentence-panel"
-          style={{
-            display: 'grid',
-            gap: '1rem',
-            gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1.5fr) minmax(0, 1fr)',
-            marginTop: '1rem',
-          }}
-        >
+        <section className="learning-panel sentence-panel mobile-sentence-panel" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(0, 1fr)', gap: '1rem', padding: '1.25rem', width: '100%' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-            <div>
-              <p className="eyebrow">Sentence Practice</p>
-              <h3>내 문장 만들기</h3>
+            <div className="split-line">
+              <div>
+                <p className="eyebrow" style={{ fontSize: '0.65rem' }}>Sentence Practice</p>
+                <h3 style={{ fontSize: '1.05rem', margin: 0 }}>내 문장 만들기</h3>
+              </div>
             </div>
 
             <textarea
               onChange={(event) => setSentence(event.target.value)}
               placeholder="표현을 사용해서 직접 문장을 만들어보세요."
               value={sentence}
+              style={{ flex: 1, minHeight: '5rem', resize: 'none', padding: '0.75rem', fontSize: '0.9rem', borderRadius: '0.8rem', border: 'none', background: 'var(--surface-low)', outline: 'none', width: '100%', boxShadow: 'inset 0 0 0 1px rgba(198, 197, 212, 0.2)' }}
             />
           </div>
 
-          <div className="ai-feedback">
-            <div className="icon-badge mint">
-              <span className="material-symbols-outlined">auto_awesome</span>
-            </div>
-            <div>
-              <strong>AI 문장 피드백</strong>
-              <p>
-                {sentence.trim().length > 0
-                  ? data.aiFeedback
-                  : '문장을 입력하면 여기에서 피드백을 이어갈 수 있습니다.'}
-              </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '1rem', gap: '0.8rem', background: 'rgba(139, 241, 230, 0.18)', borderRadius: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div className="icon-badge mint" style={{ width: '1.8rem', height: '1.8rem', minWidth: '1.8rem' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>auto_awesome</span>
+                </div>
+                <strong style={{ fontSize: '0.9rem', color: 'var(--mint-deep)' }}>AI 문장 피드백</strong>
+              </div>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+                <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: '1.4', color: 'var(--text)' }}>
+                  {sentence.trim().length > 0
+                    ? data.aiFeedback
+                    : '문장을 입력하면 여기에서 피드백을 이어갈 수 있습니다.'}
+                </p>
+              </div>
+              <button className="button primary" style={{ alignSelf: 'flex-end', padding: '0.4rem 0.8rem', fontSize: '0.8rem', minHeight: '2rem' }} type="button">
+                확인
+              </button>
             </div>
           </div>
         </section>
       </div>
 
-      <footer
-        className="review-action-bar learning-review-bar"
-        style={{
-          display: 'grid',
-          gap: '0.45rem',
-          gridTemplateColumns: isMobile ? 'repeat(4, minmax(0, 1fr))' : 'repeat(8, minmax(0, 1fr))',
-          padding: '0.7rem',
-        }}
-      >
+      <footer className="review-action-bar learning-review-bar" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '0.5rem', padding: '0.8rem' }}>
         {reviewOptions.map((option) => (
           <button
             className={`review-pill review-pill-compact${reviewResult === option.result ? ' active' : ''}${option.result === 'exclude' ? ' exclude' : ''}`}
             key={option.result}
             onClick={() => void handleReview(option.result)}
             type="button"
+            style={{ minHeight: '3rem', padding: '0.4rem 0.2rem', gap: '0.15rem' }}
           >
-            <strong>{option.label}</strong>
-            <span>{option.subtitle}</span>
+            <strong style={{ fontSize: '0.82rem' }}>{option.label}</strong>
+            <span style={{ fontSize: '0.65rem', whiteSpace: 'nowrap' }}>{option.subtitle}</span>
           </button>
         ))}
       </footer>
