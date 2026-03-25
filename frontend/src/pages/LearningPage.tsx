@@ -24,6 +24,7 @@ export function LearningPage() {
   const { showToast } = useToast();
   const mode = searchParams.get('mode') ?? 'study';
   const seriesId = searchParams.get('seriesId');
+  const randomStep = Number(searchParams.get('step') ?? '1');
   const { data, error, loading, reload } = useRemoteData(() => contentService.getLearningItem(itemId, mode), [itemId, mode]);
   const [answer, setAnswer] = useState('');
   const [answerResult, setAnswerResult] = useState<CheckAnswerResponse | null>(null);
@@ -62,6 +63,10 @@ export function LearningPage() {
         translation: answerResult.exampleTranslation,
       }
     : null;
+  const displayCurrent = mode === 'random' && data.progress.total > 0
+    ? ((Math.max(randomStep, 1) - 1) % data.progress.total) + 1
+    : data.progress.current;
+  const displayTotal = data.progress.total;
 
   const speak = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -73,7 +78,7 @@ export function LearningPage() {
 
   const handleCheckAnswer = async () => {
     try {
-      const response = await contentService.checkAnswer(itemId, answer);
+      const response = await contentService.checkAnswer(itemId, answer, mode);
       setAnswerResult(response);
       speak(response.correctAnswer);
       showToast(response.isCorrect ? '정답입니다.' : '정답을 확인해보세요.', response.isCorrect ? 'success' : 'error');
@@ -103,7 +108,9 @@ export function LearningPage() {
       const response = await contentService.submitReview(itemId, result, mode);
       setReviewResult(result);
       showToast(
-        result === 'exclude'
+        mode === 'random'
+          ? '다음 랜덤 단어로 넘어갑니다.'
+          : result === 'exclude'
           ? '복습 목록에서 제외했습니다.'
           : `복습 결과를 저장했습니다. 다음 복습은 ${response.nextReviewAt ? new Date(response.nextReviewAt).toLocaleString('ko-KR') : '-'} 입니다.`,
         'success',
@@ -114,7 +121,15 @@ export function LearningPage() {
         if (seriesId) {
           nextParams.set('seriesId', seriesId);
         }
+        if (mode === 'random') {
+          nextParams.set('step', String(Math.max(randomStep, 1) + 1));
+        }
         navigate(`/learning/${response.nextItemId}?${nextParams.toString()}`, { replace: true });
+        return;
+      }
+
+      if (mode === 'random') {
+        navigate(seriesId ? `/series/${seriesId}` : '/my-series', { replace: true });
         return;
       }
 
@@ -146,13 +161,13 @@ export function LearningPage() {
           <div className="split-line">
             <span>Progress</span>
             <strong>
-              {data.progress.current} / {data.progress.total}
+              {displayCurrent} / {displayTotal}
             </strong>
           </div>
           <div className="progress-track">
             <span
               className="progress-fill"
-              style={{ width: `${(data.progress.current / data.progress.total) * 100}%` }}
+              style={{ width: `${(displayCurrent / Math.max(displayTotal, 1)) * 100}%` }}
             />
           </div>
         </div>
@@ -267,27 +282,45 @@ export function LearningPage() {
         </section>
       </div>
 
-      <footer className="review-action-bar learning-review-bar" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '0.5rem', padding: '0.8rem' }}>
-        {reviewOptions.map((option) => (
+      {mode === 'random' ? (
+        <footer className="review-action-bar learning-review-bar" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: '0.5rem', padding: '0.8rem' }}>
           <button
-            className={`review-pill review-pill-compact${reviewResult === option.result ? ' active' : ''}${option.result === 'exclude' ? ' exclude' : ''}`}
+            className="button primary wide"
             disabled={!answerResult}
-            key={option.result}
-            onClick={() => void handleReview(option.result)}
+            onClick={() => void handleReview('good')}
             type="button"
             style={{
-              minHeight: '3rem',
-              padding: '0.4rem 0.2rem',
-              gap: '0.15rem',
+              minHeight: '3.1rem',
               opacity: answerResult ? 1 : 0.45,
               cursor: answerResult ? 'pointer' : 'not-allowed',
             }}
           >
-            <strong style={{ fontSize: '0.82rem' }}>{option.label}</strong>
-            <span style={{ fontSize: '0.65rem', whiteSpace: 'nowrap' }}>{option.subtitle}</span>
+            다음 문제
           </button>
-        ))}
-      </footer>
+        </footer>
+      ) : (
+        <footer className="review-action-bar learning-review-bar" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '0.5rem', padding: '0.8rem' }}>
+          {reviewOptions.map((option) => (
+            <button
+              className={`review-pill review-pill-compact${reviewResult === option.result ? ' active' : ''}${option.result === 'exclude' ? ' exclude' : ''}`}
+              disabled={!answerResult}
+              key={option.result}
+              onClick={() => void handleReview(option.result)}
+              type="button"
+              style={{
+                minHeight: '3rem',
+                padding: '0.4rem 0.2rem',
+                gap: '0.15rem',
+                opacity: answerResult ? 1 : 0.45,
+                cursor: answerResult ? 'pointer' : 'not-allowed',
+              }}
+            >
+              <strong style={{ fontSize: '0.82rem' }}>{option.label}</strong>
+              <span style={{ fontSize: '0.65rem', whiteSpace: 'nowrap' }}>{option.subtitle}</span>
+            </button>
+          ))}
+        </footer>
+      )}
     </div>
   );
 }

@@ -59,7 +59,7 @@ public class ContentController {
             @PathVariable String itemId,
             @Valid @RequestBody ContentActionDtos.CheckAnswerRequest request
     ) {
-        return contentService.checkAnswer(authenticatedUser.userId(), itemId, request.typedAnswer());
+        return contentService.checkAnswer(authenticatedUser.userId(), itemId, request.typedAnswer(), request.mode());
     }
 
     @PostMapping("/learning-items/{itemId}/favorite")
@@ -95,5 +95,10 @@ public class ContentController {
     @GetMapping("/favorites")
     public ApiResponses.FavoritesResponse favorites(@CurrentUser AuthenticatedUser authenticatedUser) {
         return contentService.getFavorites(authenticatedUser.userId());
+    }
+
+    @GetMapping("/packs/{packId}/random-item")
+    public ApiResponses.RandomLearningItemResponse randomLearningItem(@PathVariable String packId) {
+        return contentService.getRandomLearningItemByPack(packId);
     }
 }

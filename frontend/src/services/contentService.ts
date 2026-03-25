@@ -27,9 +27,9 @@ export const contentService = {
     const params = new URLSearchParams({ mode });
     return apiRequest<LearningItemResponse>(`/learning-items/${itemId}?${params.toString()}`, { method: 'GET' });
   },
-  checkAnswer(itemId: string, typedAnswer: string) {
+  checkAnswer(itemId: string, typedAnswer: string, mode = 'study') {
     return apiRequest<CheckAnswerResponse>(`/learning-items/${itemId}/check-answer`, {
-      body: JSON.stringify({ typedAnswer }),
+      body: JSON.stringify({ mode, typedAnswer }),
       method: 'POST',
     });
   },
@@ -41,6 +41,9 @@ export const contentService = {
   },
   getReviewQueue() {
     return apiRequest<ReviewQueueResponse>('/reviews/queue', { method: 'GET' });
+  },
+  getRandomPackItem(packId: string) {
+    return apiRequest<{ itemId: string }>(`/packs/${packId}/random-item`, { method: 'GET' });
   },
   submitReview(itemId: string, result: ReviewResult, mode = 'study') {
     return apiRequest<ReviewScheduleResponse>(`/learning-items/${itemId}/review`, {

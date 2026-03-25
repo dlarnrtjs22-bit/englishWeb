@@ -37,6 +37,10 @@ public interface ContentQueryMapper {
 
     String findNextFavoriteItemId(@Param("userId") String userId, @Param("itemId") String itemId);
 
+    String findRandomLearningItemId(@Param("itemId") String itemId);
+
+    String findRandomLearningItemIdByPackId(@Param("packId") String packId);
+
     List<FavoriteRow> findFavorites(@Param("userId") String userId);
 
     List<ReviewQueueRow> findDueReviewItems(@Param("userId") String userId);

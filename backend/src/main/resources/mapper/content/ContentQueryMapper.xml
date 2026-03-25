@@ -130,26 +130,38 @@
                   )
             ) as remaining_item_count,
             (
-                select li.id::text
-                from learning_items li
-                where li.pack_id = p.id
-                  and li.is_published = true
-                  and not exists (
-                      select 1
-                      from excluded_learning_items ex
-                      where ex.user_id = cast(#{userId} as uuid)
-                        and ex.learning_item_id = li.id
-                  )
-                  and not exists (
-                      select 1
-                      from review_schedules rs
-                      where rs.user_id = cast(#{userId} as uuid)
-                        and rs.learning_item_id = li.id
-                        and rs.last_result is not null
-                        and rs.last_result &lt;&gt; 'minute'
-                  )
-                order by li.order_index asc
-                limit 1
+                select coalesce(
+                    (
+                        select li.id::text
+                        from learning_items li
+                        where li.pack_id = p.id
+                          and li.is_published = true
+                          and not exists (
+                              select 1
+                              from excluded_learning_items ex
+                              where ex.user_id = cast(#{userId} as uuid)
+                                and ex.learning_item_id = li.id
+                          )
+                          and not exists (
+                              select 1
+                              from review_schedules rs
+                              where rs.user_id = cast(#{userId} as uuid)
+                                and rs.learning_item_id = li.id
+                                and rs.last_result is not null
+                                and rs.last_result &lt;&gt; 'minute'
+                          )
+                        order by li.order_index asc
+                        limit 1
+                    ),
+                    (
+                        select li.id::text
+                        from learning_items li
+                        where li.pack_id = p.id
+                          and li.is_published = true
+                        order by random()
+                        limit 1
+                    )
+                )
             ) as first_item_id
         from packs p
         where p.series_id = cast(#{seriesId} as uuid)
@@ -320,6 +332,44 @@
         select next_id
         from candidates
         order by is_current asc, created_at desc
+        limit 1
+    </select>
+
+    <select id="findRandomLearningItemId" resultType="string">
+        with current_item as (
+            select li.id, li.pack_id
+            from learning_items li
+            where li.id = cast(#{itemId} as uuid)
+        ),
+        random_other as (
+            select li.id::text as next_id
+            from learning_items li
+            join current_item ci on ci.pack_id = li.pack_id
+            where li.is_published = true
+              and li.id &lt;&gt; ci.id
+            order by random()
+            limit 1
+        ),
+        random_any as (
+            select li.id::text as next_id
+            from learning_items li
+            join current_item ci on ci.pack_id = li.pack_id
+            where li.is_published = true
+            order by random()
+            limit 1
+        )
+        select coalesce(
+            (select next_id from random_other),
+            (select next_id from random_any)
+        )
+    </select>
+
+    <select id="findRandomLearningItemIdByPackId" resultType="string">
+        select li.id::text
+        from learning_items li
+        where li.pack_id = cast(#{packId} as uuid)
+          and li.is_published = true
+        order by random()
         limit 1
     </select>
 

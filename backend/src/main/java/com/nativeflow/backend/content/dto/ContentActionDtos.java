@@ -5,7 +5,7 @@ public final class ContentActionDtos {
     private ContentActionDtos() {
     }
 
-    public record CheckAnswerRequest(String typedAnswer) {
+    public record CheckAnswerRequest(String typedAnswer, String mode) {
     }
 
     public record ReviewRequest(

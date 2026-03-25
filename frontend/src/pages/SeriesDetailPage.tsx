@@ -1,14 +1,26 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useToast } from '../app/ToastContext';
 import { ErrorPanel, LoadingPanel } from '../components/StatePanels';
 import { useRemoteData } from '../hooks/useRemoteData';
 import { contentService } from '../services/contentService';
 
 export function SeriesDetailPage() {
   const { seriesId = '' } = useParams();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
   const { data, error, loading, reload } = useRemoteData(
     () => contentService.getSeriesDetail(seriesId),
     [seriesId],
   );
+
+  const handleRandomLearning = async (packId: string) => {
+    try {
+      const response = await contentService.getRandomPackItem(packId);
+      navigate(`/learning/${response.itemId}?mode=random&seriesId=${data?.id ?? seriesId}&step=1`);
+    } catch (cause) {
+      showToast(cause instanceof Error ? cause.message : '랜덤 학습을 시작하지 못했습니다.', 'error');
+    }
+  };
 
   if (loading) {
     return <LoadingPanel message="시리즈 세부 정보를 준비하고 있습니다." />;
@@ -66,10 +78,16 @@ export function SeriesDetailPage() {
                 <div className="progress-track compact">
                   <span className="progress-fill" style={{ width: `${pack.progress}%` }} />
                 </div>
-                {!pack.locked && pack.firstItemId ? (
-                  <Link className="button secondary" to={`/learning/${pack.firstItemId}?mode=study&seriesId=${data.id}`}>
-                    학습 시작
-                  </Link>
+                {!pack.locked && (pack.firstItemId || pack.completed) ? (
+                  pack.completed ? (
+                    <button className="button secondary" onClick={() => void handleRandomLearning(pack.id)} type="button">
+                      랜덤 학습
+                    </button>
+                  ) : (
+                    <Link className="button secondary" to={`/learning/${pack.firstItemId}?mode=study&seriesId=${data.id}`}>
+                      학습 시작
+                    </Link>
+                  )
                 ) : null}
               </div>
             </article>

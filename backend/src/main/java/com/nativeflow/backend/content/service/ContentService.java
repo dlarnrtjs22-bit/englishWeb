@@ -120,7 +120,7 @@ public class ContentService {
                                         : pack.getCompletedItemCount() > 0
                                                 ? "이어 학습"
                                                 : "바로 시작 가능",
-                                pack.getFirstItemId()
+                                resolvePackEntryItemId(pack)
                         ))
                         .toList()
         );
@@ -141,17 +141,20 @@ public class ContentService {
         );
     }
 
-    public ApiResponses.CheckAnswerResponse checkAnswer(String userId, String itemId, String typedAnswer) {
+    public ApiResponses.CheckAnswerResponse checkAnswer(String userId, String itemId, String typedAnswer, String mode) {
         String rawAnswer = typedAnswer == null ? "" : typedAnswer;
         String normalizedAnswer = normalizeAnswer(typedAnswer);
+        String normalizedMode = normalizeMode(mode);
         List<String> acceptedAnswers = contentCommandMapper.findAcceptedAnswers(itemId).stream()
                 .map(this::normalizeAnswer)
                 .distinct()
                 .toList();
         boolean isCorrect = acceptedAnswers.contains(normalizedAnswer);
 
-        contentCommandMapper.insertUserAnswer(userId, itemId, rawAnswer, normalizedAnswer, isCorrect);
-        syncSeriesProgress(userId, itemId);
+        if (!"random".equals(normalizedMode)) {
+            contentCommandMapper.insertUserAnswer(userId, itemId, rawAnswer, normalizedAnswer, isCorrect);
+            syncSeriesProgress(userId, itemId);
+        }
 
         LearningItemRow row = contentQueryMapper.findLearningItem(userId, itemId, "study");
         return new ApiResponses.CheckAnswerResponse(
@@ -175,6 +178,12 @@ public class ContentService {
                                 item.getPackTitle()
                         ))
                         .toList()
+        );
+    }
+
+    public ApiResponses.RandomLearningItemResponse getRandomLearningItemByPack(String packId) {
+        return new ApiResponses.RandomLearningItemResponse(
+                contentQueryMapper.findRandomLearningItemIdByPackId(packId)
         );
     }
 
@@ -227,6 +236,18 @@ public class ContentService {
     public ApiResponses.ReviewScheduleResponse submitReview(String userId, String itemId, String result, String mode) {
         String normalizedResult = result.trim().toLowerCase();
         String normalizedMode = normalizeMode(mode);
+
+        if ("random".equals(normalizedMode)) {
+            return new ApiResponses.ReviewScheduleResponse(
+                    true,
+                    normalizedResult,
+                    0,
+                    0.0,
+                    null,
+                    contentQueryMapper.findRandomLearningItemId(itemId)
+            );
+        }
+
         int intervalDays = switch (normalizedResult) {
             case "again" -> 1;
             case "minute" -> 0;
@@ -336,6 +357,18 @@ public class ContentService {
         };
     }
 
+    private String resolvePackEntryItemId(SeriesPackRow pack) {
+        if (pack.getFirstItemId() != null) {
+            return pack.getFirstItemId();
+        }
+
+        if (pack.getRemainingItemCount() == 0 && pack.getItemCount() > 0) {
+            return contentQueryMapper.findRandomLearningItemIdByPackId(pack.getId());
+        }
+
+        return null;
+    }
+
     private ApiResponses.SeriesSummaryDto toSeriesSummary(SeriesCardRow row, String subtitle, String badge) {
         return new ApiResponses.SeriesSummaryDto(
                 row.getId(),
@@ -375,6 +408,7 @@ public class ContentService {
         return switch (mode.trim().toLowerCase()) {
             case "favorites" -> "favorites";
             case "review" -> "review";
+            case "random" -> "random";
             default -> "study";
         };
     }
