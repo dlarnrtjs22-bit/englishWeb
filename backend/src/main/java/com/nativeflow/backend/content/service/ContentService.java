@@ -156,7 +156,7 @@ public class ContentService {
             syncSeriesProgress(userId, itemId);
         }
 
-        LearningItemRow row = contentQueryMapper.findLearningItem(userId, itemId, "study");
+        LearningItemRow row = contentQueryMapper.findLearningItem(userId, itemId, normalizedMode);
         return new ApiResponses.CheckAnswerResponse(
                 isCorrect,
                 row.getTargetText(),
@@ -187,9 +187,15 @@ public class ContentService {
         );
     }
 
+    public ApiResponses.ActionSuccessResponse resetLearningItem(String userId, String itemId) {
+        contentCommandMapper.deleteReviewSchedule(userId, itemId);
+        contentCommandMapper.deleteUserAnswersForItem(userId, itemId);
+        syncSeriesProgress(userId, itemId);
+        return new ApiResponses.ActionSuccessResponse(true);
+    }
+
     public ApiResponses.FavoriteToggleResponse favoriteItem(String userId, String itemId) {
         contentCommandMapper.favoriteItem(userId, itemId);
-        contentCommandMapper.unexcludeItem(userId, itemId);
         return new ApiResponses.FavoriteToggleResponse(true, true);
     }
 
@@ -248,57 +254,10 @@ public class ContentService {
             );
         }
 
-        int intervalDays = switch (normalizedResult) {
-            case "again" -> 1;
-            case "minute" -> 0;
-            case "hard" -> 2;
-            case "good" -> 4;
-            case "easy" -> 7;
-            case "month" -> 30;
-            case "year" -> 365;
-            case "exclude" -> 0;
-            default -> 1;
-        };
-        double easeFactor = switch (normalizedResult) {
-            case "again" -> 2.1;
-            case "minute" -> 2.2;
-            case "hard" -> 2.3;
-            case "good" -> 2.5;
-            case "easy" -> 2.7;
-            case "month" -> 3.0;
-            case "year" -> 3.2;
-            case "exclude" -> 0.0;
-            default -> 2.5;
-        };
-        int repetitionCount = switch (normalizedResult) {
-            case "again" -> 0;
-            case "minute" -> 0;
-            case "hard" -> 1;
-            case "good" -> 2;
-            case "easy" -> 3;
-            case "month" -> 4;
-            case "year" -> 5;
-            case "exclude" -> 0;
-            default -> 1;
-        };
-
-        if ("exclude".equals(normalizedResult)) {
-            contentCommandMapper.excludeItem(userId, itemId);
-            syncSeriesProgress(userId, itemId);
-            return new ApiResponses.ReviewScheduleResponse(
-                    true,
-                    normalizedResult,
-                    0,
-                    0.0,
-                    null,
-                    selectNextItemId(userId, itemId, normalizedMode, normalizedResult)
-            );
-        }
-
-        contentCommandMapper.unexcludeItem(userId, itemId);
-        OffsetDateTime nextReviewAt = "minute".equals(normalizedResult)
-                ? OffsetDateTime.now().plusMinutes(1)
-                : resolveNextReviewAt(normalizedResult, intervalDays);
+        int intervalDays = resolveIntervalDays(normalizedResult, normalizedMode);
+        double easeFactor = resolveEaseFactor(normalizedResult, normalizedMode);
+        int repetitionCount = resolveRepetitionCount(normalizedResult, normalizedMode);
+        OffsetDateTime nextReviewAt = resolveNextReviewAt(normalizedResult, normalizedMode, intervalDays);
 
         contentCommandMapper.upsertReviewSchedule(userId, itemId, normalizedResult, intervalDays, repetitionCount, easeFactor, nextReviewAt);
         contentCommandMapper.insertReviewLog(userId, itemId, normalizedResult, intervalDays, easeFactor);
@@ -340,6 +299,72 @@ public class ContentService {
             case "month" -> today.plusMonths(1).atStartOfDay(SEOUL).toOffsetDateTime();
             case "year" -> today.plusYears(1).atStartOfDay(SEOUL).toOffsetDateTime();
             default -> today.plusDays(intervalDays).atStartOfDay(SEOUL).toOffsetDateTime();
+        };
+    }
+
+    private OffsetDateTime resolveNextReviewAt(String normalizedResult, String mode, int intervalDays) {
+        if ("minute".equals(normalizedResult)) {
+            return OffsetDateTime.now().plusMinutes(1);
+        }
+
+        if ("study".equals(mode) && "complete".equals(normalizedResult)) {
+            return LocalDate.now(SEOUL).plusDays(1).atStartOfDay(SEOUL).toOffsetDateTime();
+        }
+
+        return resolveNextReviewAt(normalizedResult, intervalDays);
+    }
+
+    private int resolveIntervalDays(String normalizedResult, String mode) {
+        if ("study".equals(mode) && "complete".equals(normalizedResult)) {
+            return 1;
+        }
+
+        return switch (normalizedResult) {
+            case "again" -> 1;
+            case "minute" -> 0;
+            case "hard" -> 2;
+            case "good" -> 4;
+            case "easy" -> 7;
+            case "month" -> 30;
+            case "year" -> 365;
+            case "complete" -> 1;
+            default -> 1;
+        };
+    }
+
+    private double resolveEaseFactor(String normalizedResult, String mode) {
+        if ("study".equals(mode) && "complete".equals(normalizedResult)) {
+            return 2.5;
+        }
+
+        return switch (normalizedResult) {
+            case "again" -> 2.1;
+            case "minute" -> 2.2;
+            case "hard" -> 2.3;
+            case "good" -> 2.5;
+            case "easy" -> 2.7;
+            case "month" -> 3.0;
+            case "year" -> 3.2;
+            case "complete" -> 2.5;
+            default -> 2.5;
+        };
+    }
+
+    private int resolveRepetitionCount(String normalizedResult, String mode) {
+        if ("study".equals(mode) && "complete".equals(normalizedResult)) {
+            return 1;
+        }
+
+        return switch (normalizedResult) {
+            case "again" -> 0;
+            case "minute" -> 0;
+            case "hard" -> 1;
+            case "good" -> 2;
+            case "easy" -> 3;
+            case "month" -> 4;
+            case "year" -> 5;
+            case "complete" -> 1;
+            default -> 1;
         };
     }
 

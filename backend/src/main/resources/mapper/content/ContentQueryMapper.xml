@@ -92,21 +92,13 @@
                 from learning_items li
                 where li.pack_id = p.id
                   and li.is_published = true
-                  and (
-                      exists (
-                          select 1
-                          from excluded_learning_items ex
-                          where ex.user_id = cast(#{userId} as uuid)
-                            and ex.learning_item_id = li.id
-                      )
-                      or exists (
-                          select 1
-                          from review_schedules rs
-                          where rs.user_id = cast(#{userId} as uuid)
-                            and rs.learning_item_id = li.id
-                            and rs.last_result is not null
-                            and rs.last_result &lt;&gt; 'minute'
-                      )
+                  and exists (
+                      select 1
+                      from review_schedules rs
+                      where rs.user_id = cast(#{userId} as uuid)
+                        and rs.learning_item_id = li.id
+                        and rs.next_review_at is not null
+                        and rs.next_review_at &gt; now()
                   )
             ) as completed_item_count,
             (
@@ -116,52 +108,28 @@
                   and li.is_published = true
                   and not exists (
                       select 1
-                      from excluded_learning_items ex
-                      where ex.user_id = cast(#{userId} as uuid)
-                        and ex.learning_item_id = li.id
+                      from review_schedules rs
+                      where rs.user_id = cast(#{userId} as uuid)
+                        and rs.learning_item_id = li.id
+                        and rs.next_review_at is not null
+                        and rs.next_review_at &gt; now()
                   )
+            ) as remaining_item_count,
+            (
+                select li.id::text
+                from learning_items li
+                where li.pack_id = p.id
+                  and li.is_published = true
                   and not exists (
                       select 1
                       from review_schedules rs
                       where rs.user_id = cast(#{userId} as uuid)
                         and rs.learning_item_id = li.id
-                        and rs.last_result is not null
-                        and rs.last_result &lt;&gt; 'minute'
+                        and rs.next_review_at is not null
+                        and rs.next_review_at &gt; now()
                   )
-            ) as remaining_item_count,
-            (
-                select coalesce(
-                    (
-                        select li.id::text
-                        from learning_items li
-                        where li.pack_id = p.id
-                          and li.is_published = true
-                          and not exists (
-                              select 1
-                              from excluded_learning_items ex
-                              where ex.user_id = cast(#{userId} as uuid)
-                                and ex.learning_item_id = li.id
-                          )
-                          and not exists (
-                              select 1
-                              from review_schedules rs
-                              where rs.user_id = cast(#{userId} as uuid)
-                                and rs.learning_item_id = li.id
-                                and rs.last_result is not null
-                                and rs.last_result &lt;&gt; 'minute'
-                          )
-                        order by li.order_index asc
-                        limit 1
-                    ),
-                    (
-                        select li.id::text
-                        from learning_items li
-                        where li.pack_id = p.id
-                          and li.is_published = true
-                        order by random()
-                        limit 1
-                    )
-                )
+                order by li.order_index asc
+                limit 1
             ) as first_item_id
         from packs p
         where p.series_id = cast(#{seriesId} as uuid)
@@ -176,17 +144,11 @@
           and li.is_published = true
           and not exists (
               select 1
-              from excluded_learning_items ex
-              where ex.user_id = cast(#{userId} as uuid)
-                and ex.learning_item_id = li.id
-          )
-          and not exists (
-              select 1
               from review_schedules rs
               where rs.user_id = cast(#{userId} as uuid)
                 and rs.learning_item_id = li.id
-                and rs.last_result is not null
-                and rs.last_result &lt;&gt; 'minute'
+                and rs.next_review_at is not null
+                and rs.next_review_at &gt; now()
           )
         order by li.order_index asc
         limit 1
@@ -203,43 +165,49 @@
             li.example_translation,
             li.order_index as order_index,
             case
-                when #{mode} = 'study' then least(
+                when #{mode} = 'study' then greatest(
+                    1,
                     (
                         select count(*)
                         from learning_items same_pack
                         where same_pack.pack_id = li.pack_id
                           and same_pack.is_published = true
-                          and (
-                              exists (
-                                  select 1
-                                  from excluded_learning_items ex
-                                  where ex.user_id = cast(#{userId} as uuid)
-                                    and ex.learning_item_id = same_pack.id
-                              )
-                              or exists (
-                                  select 1
-                                  from review_schedules rs
-                                  where rs.user_id = cast(#{userId} as uuid)
-                                    and rs.learning_item_id = same_pack.id
-                                    and rs.last_result is not null
-                                    and rs.last_result &lt;&gt; 'minute'
-                              )
+                          and same_pack.order_index &lt;= li.order_index
+                          and not exists (
+                              select 1
+                              from review_schedules rs
+                              where rs.user_id = cast(#{userId} as uuid)
+                                and rs.learning_item_id = same_pack.id
+                                and rs.next_review_at is not null
+                                and rs.next_review_at &gt; now()
                           )
-                    ) + 1,
-                    (
-                        select count(*)
-                        from learning_items same_pack
-                        where same_pack.pack_id = li.pack_id
-                          and same_pack.is_published = true
                     )
                 )
                 else li.order_index
             end as current,
             (
-                select count(*)
-                from learning_items same_pack
-                where same_pack.pack_id = li.pack_id
-                  and same_pack.is_published = true
+                case
+                    when #{mode} = 'study' then (
+                        select count(*)
+                        from learning_items same_pack
+                        where same_pack.pack_id = li.pack_id
+                          and same_pack.is_published = true
+                          and not exists (
+                              select 1
+                              from review_schedules rs
+                              where rs.user_id = cast(#{userId} as uuid)
+                                and rs.learning_item_id = same_pack.id
+                                and rs.next_review_at is not null
+                                and rs.next_review_at &gt; now()
+                          )
+                    )
+                    else (
+                        select count(*)
+                        from learning_items same_pack
+                        where same_pack.pack_id = li.pack_id
+                          and same_pack.is_published = true
+                    )
+                end
             ) as total
         from learning_items li
         where li.id = cast(#{itemId} as uuid)
@@ -260,17 +228,11 @@
             where li.is_published = true
               and not exists (
                   select 1
-                  from excluded_learning_items ex
-                  where ex.user_id = cast(#{userId} as uuid)
-                    and ex.learning_item_id = li.id
-              )
-              and not exists (
-                  select 1
                   from review_schedules rs
                   where rs.user_id = cast(#{userId} as uuid)
                     and rs.learning_item_id = li.id
-                    and rs.last_result is not null
-                    and rs.last_result &lt;&gt; 'minute'
+                    and rs.next_review_at is not null
+                    and rs.next_review_at &gt; now()
               )
         ),
         next_after as (
@@ -298,25 +260,16 @@
             select
                 li.id::text as next_id,
                 case when li.id = cast(#{itemId} as uuid) then 1 else 0 end as is_current,
-                case when rs.last_result = 'minute' then 0 else 1 end as priority_group,
                 coalesce(rs.next_review_at, now()) as next_review_at
             from review_schedules rs
             join learning_items li on li.id = rs.learning_item_id
             where rs.user_id = cast(#{userId} as uuid)
-              and not exists (
-                  select 1
-                  from excluded_learning_items ex
-                  where ex.user_id = cast(#{userId} as uuid)
-                    and ex.learning_item_id = li.id
-              )
-              and (
-                  rs.last_result = 'minute'
-                  or (rs.next_review_at is not null and rs.next_review_at &lt;= now())
-              )
+              and rs.next_review_at is not null
+              and rs.next_review_at &lt;= now()
         )
         select next_id
         from candidates
-        order by is_current asc, priority_group asc, next_review_at asc
+        order by is_current asc, next_review_at asc
         limit 1
     </select>
 
@@ -401,12 +354,6 @@
         where rs.user_id = cast(#{userId} as uuid)
           and rs.next_review_at is not null
           and rs.next_review_at &lt;= now()
-          and not exists (
-              select 1
-              from excluded_learning_items ex
-              where ex.user_id = rs.user_id
-                and ex.learning_item_id = rs.learning_item_id
-          )
         order by rs.next_review_at asc
     </select>
 

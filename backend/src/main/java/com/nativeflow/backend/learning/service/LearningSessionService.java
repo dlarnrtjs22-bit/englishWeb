@@ -128,13 +128,6 @@ public class LearningSessionService {
             return new ApiResponses.ReviewScheduleResponse(true, normalizedResult, 0, 2.2, null, current.getLearningItemId());
         }
 
-        if ("exclude".equals(normalizedResult)) {
-            contentCommandMapper.excludeItem(userId, current.getLearningItemId());
-            learningSessionMapper.completeItem(current.getSessionItemId(), "excluded", normalizedResult);
-            learningSessionMapper.incrementSessionTotals(sessionId, 0, 1);
-            return new ApiResponses.ReviewScheduleResponse(true, normalizedResult, 0, 0.0, null, nextLearningItemId(sessionId));
-        }
-
         int intervalDays = switch (normalizedResult) {
             case "again" -> 1;
             case "hard" -> 2;
@@ -142,6 +135,7 @@ public class LearningSessionService {
             case "easy" -> 7;
             case "month" -> 30;
             case "year" -> 365;
+            case "complete" -> 1;
             default -> 1;
         };
         double easeFactor = switch (normalizedResult) {
@@ -151,6 +145,7 @@ public class LearningSessionService {
             case "easy" -> 2.7;
             case "month" -> 3.0;
             case "year" -> 3.2;
+            case "complete" -> 2.5;
             default -> 2.5;
         };
         int repetitionCount = switch (normalizedResult) {
@@ -160,6 +155,7 @@ public class LearningSessionService {
             case "easy" -> 3;
             case "month" -> 4;
             case "year" -> 5;
+            case "complete" -> 1;
             default -> 1;
         };
 
@@ -169,7 +165,6 @@ public class LearningSessionService {
             default -> LocalDate.now(SEOUL).plusDays(intervalDays).atStartOfDay(SEOUL).toOffsetDateTime();
         };
 
-        contentCommandMapper.unexcludeItem(userId, current.getLearningItemId());
         contentCommandMapper.upsertReviewSchedule(userId, current.getLearningItemId(), normalizedResult, intervalDays, repetitionCount, easeFactor, nextReviewAt);
         contentCommandMapper.insertReviewLog(userId, current.getLearningItemId(), normalizedResult, intervalDays, easeFactor);
         learningSessionMapper.completeItem(current.getSessionItemId(), "done", normalizedResult);

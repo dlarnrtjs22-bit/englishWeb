@@ -1,4 +1,4 @@
-export type ReviewResult = 'again' | 'easy' | 'exclude' | 'good' | 'hard' | 'minute' | 'month' | 'year';
+export type ReviewResult = 'again' | 'complete' | 'easy' | 'good' | 'hard' | 'minute' | 'month' | 'year';
 
 export interface UserProfile {
   email: string;

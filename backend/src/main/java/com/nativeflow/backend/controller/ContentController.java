@@ -87,6 +87,14 @@ public class ContentController {
         return contentService.submitReview(authenticatedUser.userId(), itemId, request.result(), request.mode());
     }
 
+    @PostMapping("/learning-items/{itemId}/reset")
+    public ApiResponses.ActionSuccessResponse resetLearningItem(
+            @CurrentUser AuthenticatedUser authenticatedUser,
+            @PathVariable String itemId
+    ) {
+        return contentService.resetLearningItem(authenticatedUser.userId(), itemId);
+    }
+
     @GetMapping("/reviews/queue")
     public ApiResponses.ReviewQueueResponse reviewQueue(@CurrentUser AuthenticatedUser authenticatedUser) {
         return contentService.getReviewQueue(authenticatedUser.userId());

@@ -138,6 +138,9 @@ public final class ApiResponses {
     public record RandomLearningItemResponse(String itemId) {
     }
 
+    public record ActionSuccessResponse(boolean success) {
+    }
+
     public record SettingsProfileDto(String name, String email, String bio) {
     }
 

@@ -32,10 +32,6 @@ public interface ContentCommandMapper {
 
     void unfavoriteItem(@Param("userId") String userId, @Param("itemId") String itemId);
 
-    void excludeItem(@Param("userId") String userId, @Param("itemId") String itemId);
-
-    void unexcludeItem(@Param("userId") String userId, @Param("itemId") String itemId);
-
     void upsertReviewSchedule(
             @Param("userId") String userId,
             @Param("itemId") String itemId,
@@ -57,4 +53,8 @@ public interface ContentCommandMapper {
     void updateSeriesProgressCounts(@Param("userId") String userId, @Param("seriesId") String seriesId);
 
     String findSeriesIdByLearningItem(@Param("itemId") String itemId);
+
+    void deleteReviewSchedule(@Param("userId") String userId, @Param("itemId") String itemId);
+
+    void deleteUserAnswersForItem(@Param("userId") String userId, @Param("itemId") String itemId);
 }

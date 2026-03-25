@@ -89,18 +89,6 @@
           and learning_item_id = cast(#{itemId} as uuid)
     </delete>
 
-    <insert id="excludeItem">
-        insert into excluded_learning_items (user_id, learning_item_id, reason)
-        values (cast(#{userId} as uuid), cast(#{itemId} as uuid), 'manual')
-        on conflict (user_id, learning_item_id) do nothing
-    </insert>
-
-    <delete id="unexcludeItem">
-        delete from excluded_learning_items
-        where user_id = cast(#{userId} as uuid)
-          and learning_item_id = cast(#{itemId} as uuid)
-    </delete>
-
     <insert id="upsertReviewSchedule">
         insert into review_schedules (
             user_id,
@@ -163,21 +151,13 @@
                 join packs p on p.id = li.pack_id
                 where p.series_id = cast(#{seriesId} as uuid)
                   and li.is_published = true
-                  and (
-                      exists (
-                          select 1
-                          from excluded_learning_items ex
-                          where ex.user_id = cast(#{userId} as uuid)
-                            and ex.learning_item_id = li.id
-                      )
-                      or exists (
-                          select 1
-                          from review_schedules rs
-                          where rs.user_id = cast(#{userId} as uuid)
-                            and rs.learning_item_id = li.id
-                            and rs.last_result is not null
-                            and rs.last_result &lt;&gt; 'minute'
-                      )
+                  and exists (
+                      select 1
+                      from review_schedules rs
+                      where rs.user_id = cast(#{userId} as uuid)
+                        and rs.learning_item_id = li.id
+                        and rs.next_review_at is not null
+                        and rs.next_review_at &gt; now()
                   )
             ),
             due_items = (
@@ -194,6 +174,18 @@
         where sp.user_id = cast(#{userId} as uuid)
           and sp.series_id = cast(#{seriesId} as uuid)
     </update>
+
+    <delete id="deleteReviewSchedule">
+        delete from review_schedules
+        where user_id = cast(#{userId} as uuid)
+          and learning_item_id = cast(#{itemId} as uuid)
+    </delete>
+
+    <delete id="deleteUserAnswersForItem">
+        delete from user_answers
+        where user_id = cast(#{userId} as uuid)
+          and learning_item_id = cast(#{itemId} as uuid)
+    </delete>
 
     <select id="findSeriesIdByLearningItem" resultType="string">
         select s.id::text

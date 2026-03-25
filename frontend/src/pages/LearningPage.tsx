@@ -14,7 +14,7 @@ const reviewOptions: Array<{ label: string; result: ReviewResult; subtitle: stri
   { label: '쉬움', result: 'easy', subtitle: '7일' },
   { label: '1달', result: 'month', subtitle: '30일' },
   { label: '1년', result: 'year', subtitle: '365일' },
-  { label: '제외', result: 'exclude', subtitle: '목록 이동' },
+  { label: '완료(복습)', result: 'complete', subtitle: '복습으로 이동' },
 ];
 
 export function LearningPage() {
@@ -110,8 +110,8 @@ export function LearningPage() {
       showToast(
         mode === 'random'
           ? '다음 랜덤 단어로 넘어갑니다.'
-          : result === 'exclude'
-          ? '복습 목록에서 제외했습니다.'
+          : result === 'complete'
+          ? '완료 단어로 저장하고 복습 대상으로 등록했습니다.'
           : `복습 결과를 저장했습니다. 다음 복습은 ${response.nextReviewAt ? new Date(response.nextReviewAt).toLocaleString('ko-KR') : '-'} 입니다.`,
         'success',
       );
@@ -299,10 +299,18 @@ export function LearningPage() {
           </button>
         </footer>
       ) : (
-        <footer className="review-action-bar learning-review-bar" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '0.5rem', padding: '0.8rem' }}>
+        <footer
+          className="review-action-bar learning-review-bar"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+            gap: '0.5rem',
+            padding: '0.8rem',
+          }}
+        >
           {reviewOptions.map((option) => (
             <button
-              className={`review-pill review-pill-compact${reviewResult === option.result ? ' active' : ''}${option.result === 'exclude' ? ' exclude' : ''}`}
+              className={`review-pill review-pill-compact${reviewResult === option.result ? ' active' : ''}`}
               disabled={!answerResult}
               key={option.result}
               onClick={() => void handleReview(option.result)}

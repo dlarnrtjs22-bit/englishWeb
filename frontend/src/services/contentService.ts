@@ -45,6 +45,9 @@ export const contentService = {
   getRandomPackItem(packId: string) {
     return apiRequest<{ itemId: string }>(`/packs/${packId}/random-item`, { method: 'GET' });
   },
+  resetLearningItem(itemId: string) {
+    return apiRequest<{ success: boolean }>(`/learning-items/${itemId}/reset`, { method: 'POST' });
+  },
   submitReview(itemId: string, result: ReviewResult, mode = 'study') {
     return apiRequest<ReviewScheduleResponse>(`/learning-items/${itemId}/review`, {
       body: JSON.stringify({ mode, result }),
