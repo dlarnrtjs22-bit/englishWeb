@@ -25,6 +25,8 @@ public interface ContentQueryMapper {
 
     String findFirstLearningItemIdByPackId(@Param("userId") String userId, @Param("packId") String packId);
 
+    List<String> findLearningItemIdsByPackId(@Param("userId") String userId, @Param("packId") String packId);
+
     LearningItemRow findLearningItem(
             @Param("userId") String userId,
             @Param("itemId") String itemId,

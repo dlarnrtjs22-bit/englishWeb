@@ -110,6 +110,14 @@ public class ContentController {
         return contentService.getRandomLearningItemByPack(packId);
     }
 
+    @GetMapping("/packs/{packId}/study-queue")
+    public ApiResponses.RandomLearningQueueResponse studyLearningQueue(
+            @CurrentUser AuthenticatedUser authenticatedUser,
+            @PathVariable String packId
+    ) {
+        return contentService.getStudyLearningQueueByPack(authenticatedUser.userId(), packId);
+    }
+
     @GetMapping("/packs/{packId}/random-queue")
     public ApiResponses.RandomLearningQueueResponse randomLearningQueue(@PathVariable String packId) {
         return contentService.getRandomLearningQueueByPack(packId);

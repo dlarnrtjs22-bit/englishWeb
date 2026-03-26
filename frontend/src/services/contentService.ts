@@ -42,6 +42,9 @@ export const contentService = {
   getReviewQueue() {
     return apiRequest<ReviewQueueResponse>('/reviews/queue', { method: 'GET' });
   },
+  getStudyPackQueue(packId: string) {
+    return apiRequest<{ itemIds: string[] }>(`/packs/${packId}/study-queue`, { method: 'GET' });
+  },
   getRandomPackItem(packId: string) {
     return apiRequest<{ itemId: string }>(`/packs/${packId}/random-item`, { method: 'GET' });
   },

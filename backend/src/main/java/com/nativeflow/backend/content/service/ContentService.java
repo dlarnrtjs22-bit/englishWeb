@@ -56,15 +56,15 @@ public class ContentService {
                 activeSeries.isEmpty() ? "먼저 오늘의 시리즈를 하나 골라보세요." : "이어서 학습할 준비가 되어 있습니다.",
                 new ApiResponses.ReviewSummaryDto(
                         stats.getDueCount(),
-                        stats.getDueCount() > 0 ? "오늘 복습할 표현이 준비되어 있습니다." : "지금은 복습 대기 항목이 없습니다.",
+                        stats.getDueCount() > 0 ? "완료한 단어를 다시 복습할 수 있습니다." : "아직 복습할 완료 단어가 없습니다.",
                         stats.getDueCount() > 0
-                                ? List.of("복습 큐부터 시작해보세요.", "완료 후 다음 표현으로 이어집니다.")
-                                : List.of("새 표현을 학습하면 복습 큐가 채워집니다.", "가볍게 한 문제부터 시작해보세요.")
+                                ? List.of("완료 단어 전체를 기준으로 복습이 시작됩니다.", "오늘복습완료 또는 다시복습하기로 진행합니다.")
+                                : List.of("학습 화면에서 완료(복습) 처리한 단어가 복습 큐에 쌓입니다.", "가볍게 한 문제부터 시작해보세요.")
                 ),
                 activeSeries,
                 recommendedSeries,
                 List.of(
-                        new ApiResponses.StatDto("Total Streak", stats.getDueCount() > 0 ? "1일" : "0일"),
+                        new ApiResponses.StatDto("Total Streak", stats.getStreakDays() + "일"),
                         new ApiResponses.StatDto("Vocabulary", stats.getReviewedDistinctCount() + "개")
                 )
         );
@@ -193,6 +193,12 @@ public class ContentService {
         );
     }
 
+    public ApiResponses.RandomLearningQueueResponse getStudyLearningQueueByPack(String userId, String packId) {
+        return new ApiResponses.RandomLearningQueueResponse(
+                contentQueryMapper.findLearningItemIdsByPackId(userId, packId)
+        );
+    }
+
     public ApiResponses.ActionSuccessResponse resetLearningItem(String userId, String itemId) {
         contentCommandMapper.deleteReviewSchedule(userId, itemId);
         contentCommandMapper.deleteUserAnswersForItem(userId, itemId);
@@ -211,23 +217,25 @@ public class ContentService {
     }
 
     public ApiResponses.ReviewQueueResponse getReviewQueue(String userId) {
-        List<ReviewQueueRow> dueItems = contentQueryMapper.findDueReviewItems(userId);
+        List<ReviewQueueRow> reviewItems = contentQueryMapper.findDueReviewItems(userId);
         List<ReviewHistoryRow> historyRows = contentQueryMapper.findReviewHistory(userId);
-        int dueCount = dueItems.size();
+        DashboardStatsRow stats = contentQueryMapper.findDashboardStats(userId);
+        int totalReviewCount = stats.getDueCount();
+        int remainingReviewCount = reviewItems.size();
 
-        List<ApiResponses.ReviewItemDto> items = dueItems.stream()
+        List<ApiResponses.ReviewItemDto> items = reviewItems.stream()
                 .map(item -> new ApiResponses.ReviewItemDto(item.getItemId(), item.getSourceText(), item.getContextText(), 1))
                 .toList();
 
         List<ApiResponses.ReviewGroupDto> groups = new ArrayList<>();
-        dueItems.stream()
+        reviewItems.stream()
                 .map(ReviewQueueRow::getSeriesTitle)
                 .distinct()
                 .forEach(seriesTitle -> groups.add(new ApiResponses.ReviewGroupDto(
                         seriesTitle.toLowerCase().replace(" ", "-"),
                         seriesTitle,
                         seriesTitle + " 복습 큐",
-                        dueItems.stream()
+                        reviewItems.stream()
                                 .filter(item -> seriesTitle.equals(item.getSeriesTitle()))
                                 .map(item -> new ApiResponses.ReviewItemDto(item.getItemId(), item.getSourceText(), item.getContextText(), 1))
                                 .toList()
@@ -237,9 +245,9 @@ public class ContentService {
                 items,
                 groups,
                 List.of(
-                        new ApiResponses.ReviewSummaryCardDto("오늘 복습 예정", dueCount + "개", "오늘 처리할 복습 수", "alarm", "warning"),
-                        new ApiResponses.ReviewSummaryCardDto("이후 일정", Math.max(0, dueCount * 2) + "개", "다음 복습 예정 수", "calendar_month", "neutral"),
-                        new ApiResponses.ReviewSummaryCardDto("학습 스트릭", dueCount > 0 ? "1일" : "0일", "연속 학습 흐름", "local_fire_department", "mint")
+                        new ApiResponses.ReviewSummaryCardDto("전체 복습 단어", totalReviewCount + "개", "완료 단어 전체 수", "library_books", "warning"),
+                        new ApiResponses.ReviewSummaryCardDto("오늘 복습 완료", stats.getReviewedTodayCount() + "개", "오늘 복습 세션에서 처리한 수", "done_all", "neutral"),
+                        new ApiResponses.ReviewSummaryCardDto("남은 복습", remainingReviewCount + "개", "지금 다시 볼 수 있는 단어 수", "replay", "mint")
                 ),
                 historyRows.stream().map(ReviewHistoryRow::getReviewCount).toList()
         );
@@ -258,6 +266,19 @@ public class ContentService {
                     null,
                     contentQueryMapper.findRandomLearningItemId(itemId)
             );
+        }
+
+        if ("review".equals(normalizedMode)) {
+            if ("repeat".equals(normalizedResult)) {
+                contentCommandMapper.insertReviewLog(userId, itemId, "repeat", 0, 0.0);
+                return new ApiResponses.ReviewScheduleResponse(true, normalizedResult, 0, 0.0, null, null);
+            }
+
+            if ("review_done".equals(normalizedResult)) {
+                contentCommandMapper.touchReviewSchedule(userId, itemId, "review_done");
+                contentCommandMapper.insertReviewLog(userId, itemId, "review_done", 0, 0.0);
+                return new ApiResponses.ReviewScheduleResponse(true, normalizedResult, 0, 0.0, null, null);
+            }
         }
 
         int intervalDays = resolveIntervalDays(normalizedResult, normalizedMode);
@@ -443,6 +464,7 @@ public class ContentService {
             default -> "study";
         };
     }
+
 
     private String normalizeAnswer(String value) {
         if (value == null) {

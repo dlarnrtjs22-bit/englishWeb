@@ -97,8 +97,6 @@
                       from review_schedules rs
                       where rs.user_id = cast(#{userId} as uuid)
                         and rs.learning_item_id = li.id
-                        and rs.next_review_at is not null
-                        and rs.next_review_at &gt; now()
                   )
             ) as completed_item_count,
             (
@@ -111,8 +109,6 @@
                       from review_schedules rs
                       where rs.user_id = cast(#{userId} as uuid)
                         and rs.learning_item_id = li.id
-                        and rs.next_review_at is not null
-                        and rs.next_review_at &gt; now()
                   )
             ) as remaining_item_count,
             (
@@ -125,8 +121,6 @@
                       from review_schedules rs
                       where rs.user_id = cast(#{userId} as uuid)
                         and rs.learning_item_id = li.id
-                        and rs.next_review_at is not null
-                        and rs.next_review_at &gt; now()
                   )
                 order by li.order_index asc
                 limit 1
@@ -147,11 +141,23 @@
               from review_schedules rs
               where rs.user_id = cast(#{userId} as uuid)
                 and rs.learning_item_id = li.id
-                and rs.next_review_at is not null
-                and rs.next_review_at &gt; now()
           )
         order by li.order_index asc
         limit 1
+    </select>
+
+    <select id="findLearningItemIdsByPackId" resultType="string">
+        select li.id::text
+        from learning_items li
+        where li.pack_id = cast(#{packId} as uuid)
+          and li.is_published = true
+          and not exists (
+              select 1
+              from review_schedules rs
+              where rs.user_id = cast(#{userId} as uuid)
+                and rs.learning_item_id = li.id
+          )
+        order by li.order_index asc
     </select>
 
     <select id="findLearningItem" resultType="com.nativeflow.backend.content.model.LearningItemRow">
@@ -178,8 +184,6 @@
                               from review_schedules rs
                               where rs.user_id = cast(#{userId} as uuid)
                                 and rs.learning_item_id = same_pack.id
-                                and rs.next_review_at is not null
-                                and rs.next_review_at &gt; now()
                           )
                     )
                 )
@@ -197,8 +201,6 @@
                               from review_schedules rs
                               where rs.user_id = cast(#{userId} as uuid)
                                 and rs.learning_item_id = same_pack.id
-                                and rs.next_review_at is not null
-                                and rs.next_review_at &gt; now()
                           )
                     )
                     else (
@@ -231,8 +233,6 @@
                   from review_schedules rs
                   where rs.user_id = cast(#{userId} as uuid)
                     and rs.learning_item_id = li.id
-                    and rs.next_review_at is not null
-                    and rs.next_review_at &gt; now()
               )
         ),
         next_after as (
@@ -264,8 +264,6 @@
             from review_schedules rs
             join learning_items li on li.id = rs.learning_item_id
             where rs.user_id = cast(#{userId} as uuid)
-              and rs.next_review_at is not null
-              and rs.next_review_at &lt;= now()
         )
         select next_id
         from candidates
@@ -360,8 +358,14 @@
         join packs p on p.id = li.pack_id
         join series s on s.id = p.series_id
         where rs.user_id = cast(#{userId} as uuid)
-          and rs.next_review_at is not null
-          and rs.next_review_at &lt;= now()
+          and not exists (
+              select 1
+              from review_logs rl
+              where rl.user_id = rs.user_id
+                and rl.learning_item_id = rs.learning_item_id
+                and rl.result = 'review_done'
+                and (rl.reviewed_at at time zone 'Asia/Seoul')::date = (now() at time zone 'Asia/Seoul')::date
+          )
         order by rs.next_review_at asc
     </select>
 
@@ -369,13 +373,53 @@
         select
             (select count(*)
              from review_schedules rs
-             where rs.user_id = cast(#{userId} as uuid)
-               and rs.next_review_at is not null
-               and rs.next_review_at &lt;= now()) as due_count,
+             where rs.user_id = cast(#{userId} as uuid)) as due_count,
+            (select count(distinct rl.learning_item_id)
+             from review_logs rl
+             where rl.user_id = cast(#{userId} as uuid)
+               and (rl.reviewed_at at time zone 'Asia/Seoul')::date = (now() at time zone 'Asia/Seoul')::date
+               and rl.result = 'review_done') as reviewed_today_count,
             (select count(distinct ua.learning_item_id)
              from user_answers ua
              where ua.user_id = cast(#{userId} as uuid)
-               and coalesce(ua.is_correct, false) = true) as reviewed_distinct_count
+               and coalesce(ua.is_correct, false) = true) as reviewed_distinct_count,
+            (
+                with activity_days as (
+                    select distinct (ua.created_at at time zone 'Asia/Seoul')::date as day
+                    from user_answers ua
+                    where ua.user_id = cast(#{userId} as uuid)
+                    union
+                    select distinct (rl.reviewed_at at time zone 'Asia/Seoul')::date as day
+                    from review_logs rl
+                    where rl.user_id = cast(#{userId} as uuid)
+                ),
+                ordered_days as (
+                    select
+                        generate_series(
+                            (now() at time zone 'Asia/Seoul')::date - interval '365 day',
+                            (now() at time zone 'Asia/Seoul')::date,
+                            interval '1 day'
+                        )::date as day
+                ),
+                marked as (
+                    select
+                        day,
+                        exists(select 1 from activity_days a where a.day = ordered_days.day) as active,
+                        row_number() over (order by day desc) as rn
+                    from ordered_days
+                ),
+                grouped as (
+                    select
+                        rn,
+                        active,
+                        sum(case when not active then 1 else 0 end) over (order by rn) as gap_group
+                    from marked
+                )
+                select count(*)
+                from grouped
+                where gap_group = 0
+                  and active = true
+            ) as streak_days
     </select>
 
     <select id="findReviewHistory" resultType="com.nativeflow.backend.content.model.ReviewHistoryRow">

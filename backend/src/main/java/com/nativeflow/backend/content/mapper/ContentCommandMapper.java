@@ -50,6 +50,12 @@ public interface ContentCommandMapper {
             @Param("newEaseFactor") double newEaseFactor
     );
 
+    void touchReviewSchedule(
+            @Param("userId") String userId,
+            @Param("itemId") String itemId,
+            @Param("lastResult") String lastResult
+    );
+
     void updateSeriesProgressCounts(@Param("userId") String userId, @Param("seriesId") String seriesId);
 
     String findSeriesIdByLearningItem(@Param("itemId") String itemId);

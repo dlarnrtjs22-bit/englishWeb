@@ -1,9 +1,10 @@
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useToast } from '../app/ToastContext';
 import { ErrorPanel, LoadingPanel } from '../components/StatePanels';
 import { useRemoteData } from '../hooks/useRemoteData';
 import { contentService } from '../services/contentService';
 import { createRandomLearningSession } from '../utils/randomLearningSession';
+import { createStudyLearningSession } from '../utils/studyLearningSession';
 
 export function SeriesDetailPage() {
   const { seriesId = '' } = useParams();
@@ -32,6 +33,28 @@ export function SeriesDetailPage() {
       navigate(`/learning/${response.itemIds[0]}?mode=random&seriesId=${data?.id ?? seriesId}&packId=${packId}&step=1&randomSession=${sessionId}`);
     } catch (cause) {
       showToast(cause instanceof Error ? cause.message : '랜덤 학습을 시작하지 못했습니다.', 'error');
+    }
+  };
+
+  const handleStudyLearning = async (packId: string) => {
+    try {
+      const response = await contentService.getStudyPackQueue(packId);
+
+      if (!response.itemIds.length) {
+        showToast('지금 학습할 단어가 없습니다.', 'info');
+        return;
+      }
+
+      const sessionId = createStudyLearningSession({
+        initialCount: response.itemIds.length,
+        itemIds: response.itemIds,
+        packId,
+        seriesId: data?.id ?? seriesId,
+      });
+
+      navigate(`/learning/${response.itemIds[0]}?mode=study&seriesId=${data?.id ?? seriesId}&studySession=${sessionId}&step=1`);
+    } catch (cause) {
+      showToast(cause instanceof Error ? cause.message : '학습을 시작하지 못했습니다.', 'error');
     }
   };
 
@@ -97,9 +120,9 @@ export function SeriesDetailPage() {
                       랜덤 학습
                     </button>
                   ) : (
-                    <Link className="button secondary" to={`/learning/${pack.firstItemId}?mode=study&seriesId=${data.id}`}>
+                    <button className="button secondary" onClick={() => void handleStudyLearning(pack.id)} type="button">
                       학습 시작
-                    </Link>
+                    </button>
                   )
                 ) : null}
               </div>

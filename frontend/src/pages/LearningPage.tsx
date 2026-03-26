@@ -6,6 +6,16 @@ import { useRemoteData } from '../hooks/useRemoteData';
 import { contentService } from '../services/contentService';
 import type { CheckAnswerResponse, ReviewResult } from '../types/models';
 import { clearRandomLearningSession, readRandomLearningSession } from '../utils/randomLearningSession';
+import {
+  clearReviewLearningSession,
+  readReviewLearningSession,
+  writeReviewLearningSession,
+} from '../utils/reviewLearningSession';
+import {
+  clearStudyLearningSession,
+  readStudyLearningSession,
+  writeStudyLearningSession,
+} from '../utils/studyLearningSession';
 
 const reviewOptions: Array<{ label: string; result: ReviewResult; subtitle: string }> = [
   { label: '1분 후', result: 'minute', subtitle: '1분' },
@@ -25,8 +35,10 @@ export function LearningPage() {
   const { showToast } = useToast();
   const mode = searchParams.get('mode') ?? 'study';
   const seriesId = searchParams.get('seriesId');
-  const randomStep = Number(searchParams.get('step') ?? '1');
+  const currentStep = Number(searchParams.get('step') ?? '1');
   const randomSessionId = searchParams.get('randomSession');
+  const reviewSessionId = searchParams.get('reviewSession');
+  const studySessionId = searchParams.get('studySession');
   const { data, error, loading, reload } = useRemoteData(() => contentService.getLearningItem(itemId, mode), [itemId, mode]);
   const [answer, setAnswer] = useState('');
   const [answerResult, setAnswerResult] = useState<CheckAnswerResponse | null>(null);
@@ -65,11 +77,25 @@ export function LearningPage() {
         translation: answerResult.exampleTranslation,
       }
     : null;
-  const displayCurrent = mode === 'random' && data.progress.total > 0
-    ? ((Math.max(randomStep, 1) - 1) % data.progress.total) + 1
-    : data.progress.current;
   const randomSession = mode === 'random' && randomSessionId ? readRandomLearningSession(randomSessionId) : null;
-  const displayTotal = mode === 'random' && randomSession ? randomSession.itemIds.length : data.progress.total;
+  const reviewSession = mode === 'review' && reviewSessionId ? readReviewLearningSession(reviewSessionId) : null;
+  const studySession = mode === 'study' && studySessionId ? readStudyLearningSession(studySessionId) : null;
+  const studyRemaining = studySession ? studySession.itemIds.length : data.progress.total;
+  const studyCompleted = studySession ? Math.max(0, studySession.initialCount - studySession.itemIds.length) : 0;
+  const reviewRemaining = reviewSession ? reviewSession.itemIds.length : data.progress.total;
+  const reviewCompleted = reviewSession ? Math.max(0, reviewSession.initialCount - reviewSession.itemIds.length) : 0;
+  const randomCurrent = ((Math.max(currentStep, 1) - 1) % Math.max(data.progress.total, 1)) + 1;
+  const randomTotal = randomSession ? randomSession.itemIds.length : data.progress.total;
+  const progressNumerator = mode === 'study'
+    ? studyCompleted
+    : mode === 'review'
+      ? reviewCompleted
+      : randomCurrent;
+  const progressDenominator = mode === 'study'
+    ? Math.max(studyCompleted + studyRemaining, 1)
+    : mode === 'review'
+      ? Math.max(reviewCompleted + reviewRemaining, 1)
+      : Math.max(randomTotal, 1);
 
   const speak = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -107,17 +133,96 @@ export function LearningPage() {
       return;
     }
 
+    if (mode === 'study' && studySession && studySessionId && result === 'minute') {
+      const updatedItemIds = [...studySession.itemIds];
+      const currentItemId = updatedItemIds.shift();
+
+      if (currentItemId) {
+        updatedItemIds.push(currentItemId);
+      }
+
+      writeStudyLearningSession(studySessionId, { ...studySession, itemIds: updatedItemIds });
+      const nextItemId = updatedItemIds[0];
+
+      showToast('1분 후 다시 볼 단어로 보냈습니다.', 'success');
+
+      if (!nextItemId) {
+        clearStudyLearningSession(studySessionId);
+        navigate(seriesId ? `/series/${seriesId}` : '/my-series', { replace: true });
+        return;
+      }
+
+      navigate(`/learning/${nextItemId}?mode=study&seriesId=${seriesId ?? studySession.seriesId}&studySession=${studySessionId}&step=1`, { replace: true });
+      return;
+    }
+
     try {
       const response = await contentService.submitReview(itemId, result, mode);
       setReviewResult(result);
       showToast(
         mode === 'random'
           ? '다음 랜덤 단어로 넘어갑니다.'
+          : mode === 'review'
+          ? result === 'review_done'
+            ? '오늘 복습 완료로 처리했습니다.'
+            : '현재 복습 세션 뒤로 다시 넣었습니다.'
           : result === 'complete'
           ? '완료 단어로 저장하고 복습 대상으로 등록했습니다.'
           : `복습 결과를 저장했습니다. 다음 복습은 ${response.nextReviewAt ? new Date(response.nextReviewAt).toLocaleString('ko-KR') : '-'} 입니다.`,
         'success',
       );
+
+      if (mode === 'review') {
+        if (!reviewSession || !reviewSessionId) {
+          navigate('/reviews', { replace: true });
+          return;
+        }
+
+        const currentIndex = Math.max(currentStep, 1) - 1;
+        const updatedItemIds = [...reviewSession.itemIds];
+        const [currentItemId] = updatedItemIds.splice(currentIndex, 1);
+
+        if (result === 'repeat') {
+          if (currentItemId) {
+            updatedItemIds.push(currentItemId);
+          }
+          writeReviewLearningSession(reviewSessionId, { ...reviewSession, itemIds: updatedItemIds });
+          const nextItemId = updatedItemIds[Math.min(currentIndex, updatedItemIds.length - 1)];
+          if (!nextItemId) {
+            clearReviewLearningSession(reviewSessionId);
+            navigate('/reviews', { replace: true });
+            return;
+          }
+          navigate(`/learning/${nextItemId}?mode=review&reviewSession=${reviewSessionId}&step=${Math.min(currentIndex + 2, updatedItemIds.length)}`, { replace: true });
+          return;
+        }
+
+        writeReviewLearningSession(reviewSessionId, { ...reviewSession, itemIds: updatedItemIds });
+        const nextItemId = updatedItemIds[currentIndex];
+        if (!nextItemId) {
+          clearReviewLearningSession(reviewSessionId);
+          navigate('/reviews', { replace: true });
+          return;
+        }
+        navigate(`/learning/${nextItemId}?mode=review&reviewSession=${reviewSessionId}&step=${Math.min(currentIndex + 1, updatedItemIds.length)}`, { replace: true });
+        return;
+      }
+
+      if (mode === 'study' && studySession && studySessionId) {
+        const updatedItemIds = [...studySession.itemIds];
+        updatedItemIds.shift();
+
+        writeStudyLearningSession(studySessionId, { ...studySession, itemIds: updatedItemIds });
+        const nextItemId = updatedItemIds[0];
+        if (!nextItemId) {
+          clearStudyLearningSession(studySessionId);
+          showToast('현재 유닛 학습을 완료했습니다.', 'success');
+          navigate(seriesId ? `/series/${seriesId}` : '/my-series', { replace: true });
+          return;
+        }
+        navigate(`/learning/${nextItemId}?mode=study&seriesId=${seriesId ?? studySession.seriesId}&studySession=${studySessionId}&step=1`, { replace: true });
+        return;
+      }
 
       if (response.nextItemId) {
         const nextParams = new URLSearchParams({ mode });
@@ -125,7 +230,7 @@ export function LearningPage() {
           nextParams.set('seriesId', seriesId);
         }
         if (mode === 'random') {
-          nextParams.set('step', String(Math.max(randomStep, 1) + 1));
+          nextParams.set('step', String(Math.max(currentStep, 1) + 1));
         }
         navigate(`/learning/${response.nextItemId}?${nextParams.toString()}`, { replace: true });
         return;
@@ -164,16 +269,40 @@ export function LearningPage() {
           <h3>핵심 표현 학습</h3>
         </div>
         <div className="learning-progress">
-          <div className="split-line">
-            <span>Progress</span>
-            <strong>
-              {displayCurrent} / {displayTotal}
-            </strong>
-          </div>
+          {mode === 'study' ? (
+            <>
+              <div className="split-line">
+                <span>남은 학습</span>
+                <strong>{studyRemaining}개</strong>
+              </div>
+              <div className="split-line">
+                <span>오늘 완료</span>
+                <strong>{studyCompleted}개</strong>
+              </div>
+            </>
+          ) : mode === 'review' ? (
+            <>
+              <div className="split-line">
+                <span>남은 복습</span>
+                <strong>{reviewRemaining}개</strong>
+              </div>
+              <div className="split-line">
+                <span>오늘 복습 완료</span>
+                <strong>{reviewCompleted}개</strong>
+              </div>
+            </>
+          ) : (
+            <div className="split-line">
+              <span>랜덤 학습</span>
+              <strong>
+                {randomCurrent} / {randomTotal}
+              </strong>
+            </div>
+          )}
           <div className="progress-track">
             <span
               className="progress-fill"
-              style={{ width: `${(displayCurrent / Math.max(displayTotal, 1)) * 100}%` }}
+              style={{ width: `${(progressNumerator / progressDenominator) * 100}%` }}
             />
           </div>
         </div>
@@ -303,7 +432,7 @@ export function LearningPage() {
                 return;
               }
 
-              const nextIndex = Math.max(randomStep, 1);
+              const nextIndex = Math.max(currentStep, 1);
               const nextItemId = randomSession.itemIds[nextIndex];
 
               if (!nextItemId) {
@@ -329,6 +458,35 @@ export function LearningPage() {
             }}
           >
             다음 문제
+          </button>
+        </footer>
+      ) : mode === 'review' ? (
+        <footer className="review-action-bar learning-review-bar" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.5rem', padding: '0.8rem' }}>
+          <button
+            className="button secondary wide"
+            disabled={!answerResult}
+            onClick={() => void handleReview('repeat')}
+            type="button"
+            style={{
+              minHeight: '3rem',
+              opacity: answerResult ? 1 : 0.45,
+              cursor: answerResult ? 'pointer' : 'not-allowed',
+            }}
+          >
+            다시복습하기
+          </button>
+          <button
+            className="button primary wide"
+            disabled={!answerResult}
+            onClick={() => void handleReview('review_done')}
+            type="button"
+            style={{
+              minHeight: '3rem',
+              opacity: answerResult ? 1 : 0.45,
+              cursor: answerResult ? 'pointer' : 'not-allowed',
+            }}
+          >
+            오늘복습완료
           </button>
         </footer>
       ) : (
