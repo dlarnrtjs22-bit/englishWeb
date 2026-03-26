@@ -45,6 +45,9 @@ export const contentService = {
   getRandomPackItem(packId: string) {
     return apiRequest<{ itemId: string }>(`/packs/${packId}/random-item`, { method: 'GET' });
   },
+  getRandomPackQueue(packId: string) {
+    return apiRequest<{ itemIds: string[] }>(`/packs/${packId}/random-queue`, { method: 'GET' });
+  },
   resetLearningItem(itemId: string) {
     return apiRequest<{ success: boolean }>(`/learning-items/${itemId}/reset`, { method: 'POST' });
   },

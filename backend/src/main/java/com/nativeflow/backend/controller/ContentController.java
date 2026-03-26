@@ -109,4 +109,9 @@ public class ContentController {
     public ApiResponses.RandomLearningItemResponse randomLearningItem(@PathVariable String packId) {
         return contentService.getRandomLearningItemByPack(packId);
     }
+
+    @GetMapping("/packs/{packId}/random-queue")
+    public ApiResponses.RandomLearningQueueResponse randomLearningQueue(@PathVariable String packId) {
+        return contentService.getRandomLearningQueueByPack(packId);
+    }
 }

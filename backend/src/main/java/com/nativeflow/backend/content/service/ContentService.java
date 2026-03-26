@@ -187,6 +187,12 @@ public class ContentService {
         );
     }
 
+    public ApiResponses.RandomLearningQueueResponse getRandomLearningQueueByPack(String packId) {
+        return new ApiResponses.RandomLearningQueueResponse(
+                contentQueryMapper.findRandomLearningItemIdsByPackId(packId)
+        );
+    }
+
     public ApiResponses.ActionSuccessResponse resetLearningItem(String userId, String itemId) {
         contentCommandMapper.deleteReviewSchedule(userId, itemId);
         contentCommandMapper.deleteUserAnswersForItem(userId, itemId);

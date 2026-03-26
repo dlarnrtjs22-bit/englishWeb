@@ -5,6 +5,7 @@ import { ErrorPanel, LoadingPanel } from '../components/StatePanels';
 import { useRemoteData } from '../hooks/useRemoteData';
 import { contentService } from '../services/contentService';
 import type { CheckAnswerResponse, ReviewResult } from '../types/models';
+import { clearRandomLearningSession, readRandomLearningSession } from '../utils/randomLearningSession';
 
 const reviewOptions: Array<{ label: string; result: ReviewResult; subtitle: string }> = [
   { label: '1분 후', result: 'minute', subtitle: '1분' },
@@ -25,6 +26,7 @@ export function LearningPage() {
   const mode = searchParams.get('mode') ?? 'study';
   const seriesId = searchParams.get('seriesId');
   const randomStep = Number(searchParams.get('step') ?? '1');
+  const randomSessionId = searchParams.get('randomSession');
   const { data, error, loading, reload } = useRemoteData(() => contentService.getLearningItem(itemId, mode), [itemId, mode]);
   const [answer, setAnswer] = useState('');
   const [answerResult, setAnswerResult] = useState<CheckAnswerResponse | null>(null);
@@ -66,7 +68,8 @@ export function LearningPage() {
   const displayCurrent = mode === 'random' && data.progress.total > 0
     ? ((Math.max(randomStep, 1) - 1) % data.progress.total) + 1
     : data.progress.current;
-  const displayTotal = data.progress.total;
+  const randomSession = mode === 'random' && randomSessionId ? readRandomLearningSession(randomSessionId) : null;
+  const displayTotal = mode === 'random' && randomSession ? randomSession.itemIds.length : data.progress.total;
 
   const speak = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -129,6 +132,9 @@ export function LearningPage() {
       }
 
       if (mode === 'random') {
+        if (randomSessionId) {
+          clearRandomLearningSession(randomSessionId);
+        }
         navigate(seriesId ? `/series/${seriesId}` : '/my-series', { replace: true });
         return;
       }
@@ -287,7 +293,34 @@ export function LearningPage() {
           <button
             className="button primary wide"
             disabled={!answerResult}
-            onClick={() => void handleReview('good')}
+            onClick={() => {
+              if (!answerResult) {
+                return;
+              }
+
+              if (!randomSession || !randomSessionId) {
+                showToast('랜덤 학습 세션을 찾지 못했습니다.', 'error');
+                return;
+              }
+
+              const nextIndex = Math.max(randomStep, 1);
+              const nextItemId = randomSession.itemIds[nextIndex];
+
+              if (!nextItemId) {
+                clearRandomLearningSession(randomSessionId);
+                navigate(seriesId ? `/series/${seriesId}` : '/my-series', { replace: true });
+                return;
+              }
+
+              const nextParams = new URLSearchParams({
+                mode: 'random',
+                packId: randomSession.packId,
+                randomSession: randomSessionId,
+                seriesId: randomSession.seriesId,
+                step: String(nextIndex + 1),
+              });
+              navigate(`/learning/${nextItemId}?${nextParams.toString()}`, { replace: true });
+            }}
             type="button"
             style={{
               minHeight: '3.1rem',

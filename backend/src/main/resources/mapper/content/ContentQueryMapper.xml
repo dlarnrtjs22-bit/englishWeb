@@ -326,6 +326,14 @@
         limit 1
     </select>
 
+    <select id="findRandomLearningItemIdsByPackId" resultType="string">
+        select li.id::text
+        from learning_items li
+        where li.pack_id = cast(#{packId} as uuid)
+          and li.is_published = true
+        order by random()
+    </select>
+
     <select id="findFavorites" resultType="com.nativeflow.backend.content.model.FavoriteRow">
         select
             li.id::text as item_id,

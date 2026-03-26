@@ -138,6 +138,9 @@ public final class ApiResponses {
     public record RandomLearningItemResponse(String itemId) {
     }
 
+    public record RandomLearningQueueResponse(List<String> itemIds) {
+    }
+
     public record ActionSuccessResponse(boolean success) {
     }
 
