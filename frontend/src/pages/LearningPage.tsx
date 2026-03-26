@@ -4,7 +4,7 @@ import { useToast } from '../app/ToastContext';
 import { ErrorPanel, LoadingPanel } from '../components/StatePanels';
 import { useRemoteData } from '../hooks/useRemoteData';
 import { contentService } from '../services/contentService';
-import type { CheckAnswerResponse, ReviewResult } from '../types/models';
+import type { CheckAnswerResponse, ReviewResult, SentenceFeedbackResponse } from '../types/models';
 import { clearRandomLearningSession, readRandomLearningSession } from '../utils/randomLearningSession';
 import {
   clearReviewLearningSession,
@@ -43,6 +43,8 @@ export function LearningPage() {
   const [answer, setAnswer] = useState('');
   const [answerResult, setAnswerResult] = useState<CheckAnswerResponse | null>(null);
   const [sentence, setSentence] = useState('');
+  const [sentenceFeedback, setSentenceFeedback] = useState<SentenceFeedbackResponse | null>(null);
+  const [sentenceFeedbackLoading, setSentenceFeedbackLoading] = useState(false);
   const [favorite, setFavorite] = useState(false);
   const [reviewResult, setReviewResult] = useState<ReviewResult | null>(null);
 
@@ -50,6 +52,8 @@ export function LearningPage() {
     setAnswer('');
     setAnswerResult(null);
     setSentence('');
+    setSentenceFeedback(null);
+    setSentenceFeedbackLoading(false);
     setFavorite(false);
     setReviewResult(null);
     window.speechSynthesis.cancel();
@@ -96,6 +100,22 @@ export function LearningPage() {
     : mode === 'review'
       ? Math.max(reviewCompleted + reviewRemaining, 1)
       : Math.max(randomTotal, 1);
+  const sentenceFeedbackText = sentenceFeedbackLoading
+    ? 'AI가 문장을 확인하고 있습니다.'
+    : sentenceFeedback
+      ? [
+          sentenceFeedback.headline,
+          sentenceFeedback.message,
+          !sentenceFeedback.perfect && sentenceFeedback.correctedSentence
+            ? `추천 문장\n${sentenceFeedback.correctedSentence}`
+            : '',
+          sentenceFeedback.tips.length > 0
+            ? `팁\n${sentenceFeedback.tips.map((tip) => `- ${tip}`).join('\n')}`
+            : '',
+        ]
+          .filter(Boolean)
+          .join('\n\n')
+      : '문장을 직접 만들어보며 표현을 익혀보세요.';
 
   const speak = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -113,6 +133,24 @@ export function LearningPage() {
       showToast(response.isCorrect ? '정답입니다.' : '정답을 확인해보세요.', response.isCorrect ? 'success' : 'error');
     } catch (cause) {
       showToast(cause instanceof Error ? cause.message : '정답 확인에 실패했습니다.', 'error');
+    }
+  };
+
+  const handleSentenceFeedback = async () => {
+    if (!sentence.trim()) {
+      showToast('문장을 먼저 입력해주세요.', 'error');
+      return;
+    }
+
+    try {
+      setSentenceFeedbackLoading(true);
+      const response = await contentService.getSentenceFeedback(itemId, sentence, mode);
+      setSentenceFeedback(response);
+      showToast(response.perfect ? '문장이 아주 자연스러워요.' : 'AI가 문장을 다듬어드렸어요.', 'success');
+    } catch (cause) {
+      showToast(cause instanceof Error ? cause.message : 'AI 문장 피드백에 실패했습니다.', 'error');
+    } finally {
+      setSentenceFeedbackLoading(false);
     }
   };
 
@@ -392,7 +430,13 @@ export function LearningPage() {
                 value={sentence}
                 style={{ flex: 1, minHeight: '5rem', resize: 'none', padding: '0.75rem', fontSize: '0.9rem', borderRadius: '0.8rem', border: 'none', background: 'var(--surface-low)', outline: 'none', width: '100%', boxShadow: 'inset 0 0 0 1px rgba(198, 197, 212, 0.2)' }}
               />
-              <button className="button primary" style={{ alignSelf: 'flex-end', padding: '0.4rem 1.2rem', fontSize: '0.8rem', minHeight: '2.2rem' }} type="button">
+              <button
+                className="button primary"
+                disabled={sentenceFeedbackLoading}
+                onClick={() => void handleSentenceFeedback()}
+                style={{ alignSelf: 'flex-end', padding: '0.4rem 1.2rem', fontSize: '0.8rem', minHeight: '2.2rem', opacity: sentenceFeedbackLoading ? 0.7 : 1 }}
+                type="button"
+              >
                 확인
               </button>
             </div>
@@ -407,10 +451,8 @@ export function LearningPage() {
                 <strong style={{ fontSize: '0.9rem', color: 'var(--mint-deep)' }}>AI 문장 피드백</strong>
               </div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-                <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: '1.4', color: 'var(--text)' }}>
-                  {sentence.trim().length > 0
-                    ? data.aiFeedback
-                    : '문장을 입력하면 여기에서 피드백을 이어갈 수 있습니다.'}
+                <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: '1.45', color: 'var(--text)', whiteSpace: 'pre-line' }}>
+                  {sentenceFeedbackText}
                 </p>
               </div>
             </div>

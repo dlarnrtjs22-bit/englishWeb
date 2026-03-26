@@ -10,6 +10,7 @@ import type {
   ReviewQueueResponse,
   ReviewResult,
   ReviewScheduleResponse,
+  SentenceFeedbackResponse,
   SeriesDetailResponse,
   SeriesSummary,
   SettingsResponse,
@@ -30,6 +31,12 @@ export const contentService = {
   checkAnswer(itemId: string, typedAnswer: string, mode = 'study') {
     return apiRequest<CheckAnswerResponse>(`/learning-items/${itemId}/check-answer`, {
       body: JSON.stringify({ mode, typedAnswer }),
+      method: 'POST',
+    });
+  },
+  getSentenceFeedback(itemId: string, sentence: string, mode = 'study') {
+    return apiRequest<SentenceFeedbackResponse>(`/learning-items/${itemId}/sentence-feedback`, {
+      body: JSON.stringify({ mode, sentence }),
       method: 'POST',
     });
   },

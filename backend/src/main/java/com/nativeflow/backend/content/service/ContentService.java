@@ -1,5 +1,7 @@
 package com.nativeflow.backend.content.service;
 
+import com.nativeflow.backend.chatgpt.dto.ChatGptDtos;
+import com.nativeflow.backend.chatgpt.service.ChatGptProxyService;
 import com.nativeflow.backend.content.mapper.ContentCommandMapper;
 import com.nativeflow.backend.content.mapper.ContentQueryMapper;
 import com.nativeflow.backend.content.model.DashboardStatsRow;
@@ -23,13 +25,16 @@ public class ContentService {
 
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
+    private final ChatGptProxyService chatGptProxyService;
     private final ContentCommandMapper contentCommandMapper;
     private final ContentQueryMapper contentQueryMapper;
 
     public ContentService(
+            ChatGptProxyService chatGptProxyService,
             ContentCommandMapper contentCommandMapper,
             ContentQueryMapper contentQueryMapper
     ) {
+        this.chatGptProxyService = chatGptProxyService;
         this.contentCommandMapper = contentCommandMapper;
         this.contentQueryMapper = contentQueryMapper;
     }
@@ -163,6 +168,31 @@ public class ContentService {
                 acceptedAnswers,
                 row.getExampleSentence(),
                 row.getExampleTranslation()
+        );
+    }
+
+    public ApiResponses.SentenceFeedbackResponse getSentenceFeedback(
+            String userId,
+            String itemId,
+            String sentence,
+            String mode
+    ) {
+        LearningItemRow row = contentQueryMapper.findLearningItem(userId, itemId, normalizeMode(mode));
+        ChatGptDtos.SentenceFeedbackResult feedback = chatGptProxyService.generateSentenceFeedback(
+                row.getSourceText(),
+                row.getTargetText(),
+                row.getNuanceNote(),
+                row.getExampleSentence(),
+                row.getExampleTranslation(),
+                sentence.trim()
+        );
+
+        return new ApiResponses.SentenceFeedbackResponse(
+                feedback.perfect(),
+                feedback.headline(),
+                feedback.message(),
+                feedback.correctedSentence(),
+                feedback.tips()
         );
     }
 

@@ -108,6 +108,14 @@ export interface CheckAnswerResponse {
   isCorrect: boolean;
 }
 
+export interface SentenceFeedbackResponse {
+  correctedSentence: string;
+  headline: string;
+  message: string;
+  perfect: boolean;
+  tips: string[];
+}
+
 export interface FavoriteToggleResponse {
   isFavorited: boolean;
   success: boolean;

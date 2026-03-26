@@ -108,6 +108,15 @@ public final class ApiResponses {
     ) {
     }
 
+    public record SentenceFeedbackResponse(
+            boolean perfect,
+            String headline,
+            String message,
+            String correctedSentence,
+            List<String> tips
+    ) {
+    }
+
     public record ReviewItemDto(String itemId, String sourceText, String contextText, Integer level) {
     }
 

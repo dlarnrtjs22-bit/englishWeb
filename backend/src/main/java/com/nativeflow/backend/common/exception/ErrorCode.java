@@ -2,7 +2,9 @@ package com.nativeflow.backend.common.exception;
 
 public enum ErrorCode {
     BAD_REQUEST,
+    CONFIGURATION_ERROR,
     DUPLICATE_EMAIL,
+    EXTERNAL_API_ERROR,
     INVALID_CREDENTIALS,
     NOT_FOUND,
     PASSWORD_POLICY_VIOLATION,

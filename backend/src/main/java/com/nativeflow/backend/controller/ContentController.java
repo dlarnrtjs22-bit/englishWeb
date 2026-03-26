@@ -62,6 +62,20 @@ public class ContentController {
         return contentService.checkAnswer(authenticatedUser.userId(), itemId, request.typedAnswer(), request.mode());
     }
 
+    @PostMapping("/learning-items/{itemId}/sentence-feedback")
+    public ApiResponses.SentenceFeedbackResponse sentenceFeedback(
+            @CurrentUser AuthenticatedUser authenticatedUser,
+            @PathVariable String itemId,
+            @Valid @RequestBody ContentActionDtos.SentenceFeedbackRequest request
+    ) {
+        return contentService.getSentenceFeedback(
+                authenticatedUser.userId(),
+                itemId,
+                request.sentence(),
+                request.mode()
+        );
+    }
+
     @PostMapping("/learning-items/{itemId}/favorite")
     public ApiResponses.FavoriteToggleResponse favorite(
             @CurrentUser AuthenticatedUser authenticatedUser,

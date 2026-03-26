@@ -41,3 +41,14 @@ app:
       issuer: nativeflow
       access-token-validity-seconds: 3600
       refresh-token-validity-seconds: 604800
+  chatgpt:
+    chatgpt-base-url: https://chatgpt.com/backend-api
+    codex-base-url: https://chatgpt.com/backend-api/codex
+    auth-url: https://auth.openai.com/oauth/token
+    client-id: app_EMoamEEZ73f0CkXaXp7hrann
+    default-chat-model: gpt-5.3-high
+    default-codex-model: gpt-5.3-codex-spark
+    oauth-token-file: chatgptOauthKey.json
+    device-id: a5f7b2c1-3e4d-4f8a-9b6c-2d1e0f3a4b5c
+    connect-timeout-seconds: 20
+    read-timeout-seconds: 120
