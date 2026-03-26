@@ -307,7 +307,6 @@ export function LearningPage() {
           </div>
         </div>
       </header>
-
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'hidden', paddingInline: '0.2rem', minHeight: 0 }}>
         <section className="learning-main-row" style={{ flexShrink: 0, justifyItems: 'stretch', width: '100%', alignItems: 'stretch' }}>
           <article className="learning-panel learning-half" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
@@ -386,12 +385,17 @@ export function LearningPage() {
               </div>
             </div>
 
-            <textarea
-              onChange={(event) => setSentence(event.target.value)}
-              placeholder="표현을 사용해서 직접 문장을 만들어보세요."
-              value={sentence}
-              style={{ flex: 1, minHeight: '5rem', resize: 'none', padding: '0.75rem', fontSize: '0.9rem', borderRadius: '0.8rem', border: 'none', background: 'var(--surface-low)', outline: 'none', width: '100%', boxShadow: 'inset 0 0 0 1px rgba(198, 197, 212, 0.2)' }}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+              <textarea
+                onChange={(event) => setSentence(event.target.value)}
+                placeholder="표현을 사용해서 직접 문장을 만들어보세요."
+                value={sentence}
+                style={{ flex: 1, minHeight: '5rem', resize: 'none', padding: '0.75rem', fontSize: '0.9rem', borderRadius: '0.8rem', border: 'none', background: 'var(--surface-low)', outline: 'none', width: '100%', boxShadow: 'inset 0 0 0 1px rgba(198, 197, 212, 0.2)' }}
+              />
+              <button className="button primary" style={{ alignSelf: 'flex-end', padding: '0.4rem 1.2rem', fontSize: '0.8rem', minHeight: '2.2rem' }} type="button">
+                확인
+              </button>
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
@@ -409,9 +413,6 @@ export function LearningPage() {
                     : '문장을 입력하면 여기에서 피드백을 이어갈 수 있습니다.'}
                 </p>
               </div>
-              <button className="button primary" style={{ alignSelf: 'flex-end', padding: '0.4rem 0.8rem', fontSize: '0.8rem', minHeight: '2rem' }} type="button">
-                확인
-              </button>
             </div>
           </div>
         </section>

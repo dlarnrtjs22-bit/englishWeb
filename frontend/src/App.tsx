@@ -12,6 +12,7 @@ import { ReviewQueuePage } from './pages/ReviewQueuePage';
 import { SeriesDetailPage } from './pages/SeriesDetailPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SignupPage } from './pages/SignupPage';
+import { DiaryPage } from './pages/DiaryPage';
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
               <Route path="/learning/:itemId" element={<LearningPage />} />
               <Route path="/favorites" element={<FavoritesPage />} />
               <Route path="/reviews" element={<ReviewQueuePage />} />
+              <Route path="/diary" element={<DiaryPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
