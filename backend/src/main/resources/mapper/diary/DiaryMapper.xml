@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nativeflow.backend.diary.mapper.DiaryMapper">
+
+    <select id="findDiaryEntryByDate" resultType="com.nativeflow.backend.diary.model.DiaryEntryRow">
+        select
+            id::text as id,
+            entry_date,
+            raw_content,
+            feedback_headline,
+            feedback_summary,
+            corrected_content,
+            model_name,
+            is_perfect as perfect,
+            last_corrected_at
+        from diary_entries
+        where user_id = cast(#{userId} as uuid)
+          and entry_date = #{entryDate}
+        limit 1
+    </select>
+
+    <select id="findDiaryFeedbackLines" resultType="com.nativeflow.backend.diary.model.DiaryFeedbackLineRow">
+        select
+            original_line,
+            corrected_line,
+            translation_line,
+            line_order
+        from diary_entry_feedback_lines
+        where diary_entry_id = cast(#{entryId} as uuid)
+        order by line_order asc
+    </select>
+
+    <select id="findDiaryFeedbackNotes" resultType="com.nativeflow.backend.diary.model.DiaryFeedbackNoteRow">
+        select
+            note_type,
+            content,
+            note_order
+        from diary_entry_feedback_notes
+        where diary_entry_id = cast(#{entryId} as uuid)
+        order by note_type asc, note_order asc
+    </select>
+
+    <select id="findWrittenDates" resultType="java.time.LocalDate">
+        select entry_date
+        from diary_entries
+        where user_id = cast(#{userId} as uuid)
+          and entry_date between #{fromDate} and #{toDate}
+        order by entry_date asc
+    </select>
+
+    <select id="findDiaryHistory" resultType="com.nativeflow.backend.diary.model.DiaryHistoryRow">
+        select
+            de.id::text as id,
+            de.entry_date,
+            left(replace(de.raw_content, E'\n', ' '), 160) as raw_snippet,
+            left(coalesce(replace(de.corrected_content, E'\n', ' '), ''), 160) as corrected_snippet,
+            coalesce(
+                string_agg(den.content, '||' order by den.note_order)
+                    filter (where den.note_type = 'keyword'),
+                ''
+            ) as keywords
+        from diary_entries de
+        left join diary_entry_feedback_notes den on den.diary_entry_id = de.id
+        where de.user_id = cast(#{userId} as uuid)
+        group by de.id
+        order by de.entry_date desc
+        limit #{limit}
+    </select>
+
+    <select id="insertDiaryEntry" resultType="string">
+        insert into diary_entries (
+            user_id,
+            entry_date,
+            raw_content,
+            feedback_headline,
+            feedback_summary,
+            corrected_content,
+            model_name,
+            is_perfect,
+            last_corrected_at
+        ) values (
+            cast(#{userId} as uuid),
+            #{entryDate},
+            #{rawContent},
+            #{feedbackHeadline},
+            #{feedbackSummary},
+            #{correctedContent},
+            #{modelName},
+            #{isPerfect},
+            #{lastCorrectedAt}
+        )
+        returning id::text
+    </select>
+
+    <update id="updateDiaryEntry">
+        update diary_entries
+        set raw_content = #{rawContent},
+            feedback_headline = #{feedbackHeadline},
+            feedback_summary = #{feedbackSummary},
+            corrected_content = #{correctedContent},
+            model_name = #{modelName},
+            is_perfect = #{isPerfect},
+            last_corrected_at = #{lastCorrectedAt}
+        where id = cast(#{entryId} as uuid)
+    </update>
+
+    <delete id="deleteDiaryFeedbackLines">
+        delete from diary_entry_feedback_lines
+        where diary_entry_id = cast(#{entryId} as uuid)
+    </delete>
+
+    <delete id="deleteDiaryFeedbackNotes">
+        delete from diary_entry_feedback_notes
+        where diary_entry_id = cast(#{entryId} as uuid)
+    </delete>
+
+    <insert id="insertDiaryFeedbackLine">
+        insert into diary_entry_feedback_lines (
+            diary_entry_id,
+            line_order,
+            original_line,
+            corrected_line,
+            translation_line
+        ) values (
+            cast(#{entryId} as uuid),
+            #{lineOrder},
+            #{originalLine},
+            #{correctedLine},
+            #{translationLine}
+        )
+    </insert>
+
+    <insert id="insertDiaryFeedbackNote">
+        insert into diary_entry_feedback_notes (
+            diary_entry_id,
+            note_type,
+            note_order,
+            content
+        ) values (
+            cast(#{entryId} as uuid),
+            #{noteType},
+            #{noteOrder},
+            #{content}
+        )
+    </insert>
+</mapper>

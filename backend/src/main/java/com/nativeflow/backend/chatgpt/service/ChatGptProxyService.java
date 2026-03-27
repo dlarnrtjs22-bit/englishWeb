@@ -159,6 +159,67 @@ public class ChatGptProxyService {
         return parseSentenceFeedback(rawText, userSentence);
     }
 
+    public ChatGptDtos.DiaryFeedbackResult generateDiaryFeedback(String rawContent) {
+        Map<String, String> headers = new LinkedHashMap<>(tokenService.getBaseHeaders());
+        headers.put("openai-beta", "responses-api-v1");
+
+        ObjectNode body = objectMapper.createObjectNode();
+        body.put("model", properties.getDefaultCodexModel());
+        body.put(
+                "instructions",
+                """
+                You are an English diary correction assistant for Korean learners.
+                Review the diary and return only one JSON object.
+                Required keys:
+                perfect (boolean)
+                headline (string, short Korean)
+                summary (string, 1-2 Korean sentences)
+                correctedContent (string, full corrected diary)
+                lines (array of objects with originalLine, correctedLine, translationLine)
+                keywords (array of strings formatted like "English phrase : Korean meaning")
+                tips (array of short Korean tips)
+                advice (array of short Korean advice)
+                Rules:
+                - First decide whether the diary is already grammatically correct, spelled correctly, and natural for everyday English.
+                - If the diary is already correct and natural, do not rewrite it just for style.
+                - If the diary is already good, set perfect to true.
+                - When perfect is true:
+                  - headline should be a praise-style Korean sentence.
+                  - summary should briefly explain why the writing is natural and good.
+                  - correctedContent should stay the same as the original meaning, and lines should not introduce unnecessary changes.
+                  - tips and advice should encourage the learner instead of forcing corrections.
+                - Only correct when there is a clear grammar, spelling, tense, word choice, or naturalness issue.
+                - Do not mark a sentence as wrong if it is already acceptable and natural.
+                - Do not make cosmetic rewrites just because another version sounds slightly different.
+                - Split the diary into natural corrected lines.
+                - Every correctedLine must have a matching Korean translationLine directly explaining that line.
+                - For keywords, always include the Korean meaning in the same string.
+                  Example: "work from home : 재택근무를 하다"
+                - If a line is already good, it is acceptable for correctedLine to stay almost identical to the original line.
+                - Keep the output clean and practical.
+                - Do not add markdown, numbering, or code fences.
+                """
+        );
+        body.set("input", buildDiaryFeedbackInput(rawContent));
+        ObjectNode reasoning = objectMapper.createObjectNode();
+        reasoning.put("effort", "low");
+        reasoning.put("summary", "auto");
+        body.set("reasoning", reasoning);
+        body.put("stream", true);
+        body.put("store", false);
+        body.put("tool_choice", "none");
+        body.put("parallel_tool_calls", false);
+        body.set("tools", objectMapper.createArrayNode());
+
+        String rawText = collectStreamedText(
+                properties.getCodexBaseUrl() + "/responses",
+                headers,
+                body
+        );
+
+        return parseDiaryFeedback(rawText);
+    }
+
     public void streamChatMessage(ChatGptDtos.ChatMessageRequest request, OutputStream outputStream) {
         Map<String, String> baseHeaders = tokenService.getBaseHeaders();
         ChatGptProofService.ChatRequirements requirements = proofService.getChatRequirements(baseHeaders);
@@ -495,6 +556,20 @@ public class ChatGptProxyService {
         return input;
     }
 
+    private ArrayNode buildDiaryFeedbackInput(String rawContent) {
+        ArrayNode input = objectMapper.createArrayNode();
+        ObjectNode message = objectMapper.createObjectNode();
+        message.put("role", "user");
+        ArrayNode content = objectMapper.createArrayNode();
+        ObjectNode contentNode = objectMapper.createObjectNode();
+        contentNode.put("type", "input_text");
+        contentNode.put("text", rawContent);
+        content.add(contentNode);
+        message.set("content", content);
+        input.add(message);
+        return input;
+    }
+
     private String resolveReasoningEffort(String model, String requestedEffort) {
         if (StringUtils.hasText(requestedEffort)) {
             return requestedEffort.trim();
@@ -581,6 +656,82 @@ public class ChatGptProxyService {
                 userSentence,
                 List.of()
         );
+    }
+
+    private ChatGptDtos.DiaryFeedbackResult parseDiaryFeedback(String rawText) {
+        String trimmed = rawText == null ? "" : rawText.trim();
+        if (trimmed.startsWith("```")) {
+            trimmed = trimmed.replace("```json", "").replace("```", "").trim();
+        }
+
+        int start = trimmed.indexOf('{');
+        int end = trimmed.lastIndexOf('}');
+        if (start >= 0 && end > start) {
+            String candidate = trimmed.substring(start, end + 1);
+            try {
+                JsonNode json = objectMapper.readTree(candidate);
+                List<ChatGptDtos.DiaryFeedbackLineResult> lines = new java.util.ArrayList<>();
+                if (json.path("lines").isArray()) {
+                    for (JsonNode line : json.path("lines")) {
+                        String correctedLine = line.path("correctedLine").asText("").trim();
+                        if (correctedLine.isEmpty()) {
+                            continue;
+                        }
+                        lines.add(new ChatGptDtos.DiaryFeedbackLineResult(
+                                line.path("originalLine").asText(""),
+                                correctedLine,
+                                line.path("translationLine").asText("")
+                        ));
+                    }
+                }
+                String correctedContent = json.path("correctedContent").asText("").trim();
+                if (correctedContent.isEmpty() && !lines.isEmpty()) {
+                    correctedContent = lines.stream()
+                            .map(ChatGptDtos.DiaryFeedbackLineResult::correctedLine)
+                            .filter(text -> !text.isBlank())
+                            .collect(java.util.stream.Collectors.joining("\n"));
+                }
+
+                return new ChatGptDtos.DiaryFeedbackResult(
+                        json.path("perfect").asBoolean(false),
+                        json.path("headline").asText("AI 첨삭 결과"),
+                        json.path("summary").asText("문장을 더 자연스럽게 다듬었습니다."),
+                        correctedContent,
+                        properties.getDefaultCodexModel(),
+                        lines,
+                        readTextList(json.path("keywords")),
+                        readTextList(json.path("tips")),
+                        readTextList(json.path("advice"))
+                );
+            } catch (IOException ignored) {
+                // fall through
+            }
+        }
+
+        return new ChatGptDtos.DiaryFeedbackResult(
+                false,
+                "AI 첨삭 결과",
+                trimmed.isBlank() ? "일기 내용을 다시 한 번 확인해주세요." : trimmed,
+                "",
+                properties.getDefaultCodexModel(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of()
+        );
+    }
+
+    private List<String> readTextList(JsonNode node) {
+        List<String> values = new java.util.ArrayList<>();
+        if (node.isArray()) {
+            for (JsonNode item : node) {
+                String value = item.asText("").trim();
+                if (!value.isEmpty()) {
+                    values.add(value);
+                }
+            }
+        }
+        return values;
     }
 
     private String writeJson(JsonNode node) {

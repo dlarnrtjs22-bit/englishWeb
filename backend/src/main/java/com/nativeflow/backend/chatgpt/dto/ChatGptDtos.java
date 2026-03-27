@@ -62,4 +62,24 @@ public final class ChatGptDtos {
             List<String> tips
     ) {
     }
+
+    public record DiaryFeedbackLineResult(
+            String originalLine,
+            String correctedLine,
+            String translationLine
+    ) {
+    }
+
+    public record DiaryFeedbackResult(
+            boolean perfect,
+            String headline,
+            String summary,
+            String correctedContent,
+            String modelName,
+            List<DiaryFeedbackLineResult> lines,
+            List<String> keywords,
+            List<String> tips,
+            List<String> advice
+    ) {
+    }
 }

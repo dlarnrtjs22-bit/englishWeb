@@ -231,3 +231,44 @@ export interface BillingTransactionResponse {
   providerOrderId: string | null;
   status: string;
 }
+
+export interface DiaryFeedbackLine {
+  correctedLine: string;
+  originalLine: string;
+  translationLine: string;
+}
+
+export interface DiaryFeedbackResponse {
+  correctedAt: string | null;
+  correctedContent: string;
+  headline: string;
+  keywords: string[];
+  lines: DiaryFeedbackLine[];
+  modelName: string;
+  perfect: boolean;
+  summary: string;
+  tips: string[];
+  advice: string[];
+}
+
+export interface DiaryEntryResponse {
+  entryDate: string;
+  exists: boolean;
+  feedback: DiaryFeedbackResponse | null;
+  rawContent: string;
+}
+
+export interface DiaryCalendarResponse {
+  writtenDates: string[];
+}
+
+export interface DiaryHistoryItem {
+  correctedSnippet: string;
+  entryDate: string;
+  keywords: string[];
+  rawSnippet: string;
+}
+
+export interface DiaryHistoryResponse {
+  items: DiaryHistoryItem[];
+}
