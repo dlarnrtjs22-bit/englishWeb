@@ -345,8 +345,12 @@ export function LearningPage() {
           </div>
         </div>
       </header>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'hidden', paddingInline: '0.2rem', minHeight: 0 }}>
-        <section className="learning-main-row" style={{ flexShrink: 0, justifyItems: 'stretch', width: '100%', alignItems: 'stretch' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto', paddingInline: '0.2rem', minHeight: 0, scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <style>{`
+          .learning-scroll-container::-webkit-scrollbar { display: none; }
+        `}</style>
+        <div className="learning-scroll-container" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1 }}>
+          <section className="learning-main-row" style={{ justifyItems: 'stretch', width: '100%', alignItems: 'stretch' }}>
           <article className="learning-panel learning-half" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             <div className="learning-head-copy">
               <h1 style={{ fontSize: '1.6rem', marginBottom: '0.3rem' }}>{data.sourceText}</h1>
@@ -423,18 +427,18 @@ export function LearningPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', flex: 1, minHeight: '5.5rem' }}>
               <textarea
                 onChange={(event) => setSentence(event.target.value)}
                 placeholder="표현을 사용해서 직접 문장을 만들어보세요."
                 value={sentence}
-                style={{ flex: 1, minHeight: '5rem', resize: 'none', padding: '0.75rem', fontSize: '0.9rem', borderRadius: '0.8rem', border: 'none', background: 'var(--surface-low)', outline: 'none', width: '100%', boxShadow: 'inset 0 0 0 1px rgba(198, 197, 212, 0.2)' }}
+                style={{ flex: 1, minHeight: '100%', resize: 'none', padding: '0.75rem', paddingBottom: '2.8rem', fontSize: '0.9rem', borderRadius: '0.8rem', border: 'none', background: 'var(--surface-low)', outline: 'none', width: '100%', boxShadow: 'inset 0 0 0 1px rgba(198, 197, 212, 0.2)' }}
               />
               <button
                 className="button primary"
                 disabled={sentenceFeedbackLoading}
                 onClick={() => void handleSentenceFeedback()}
-                style={{ alignSelf: 'flex-end', padding: '0.4rem 1.2rem', fontSize: '0.8rem', minHeight: '2.2rem', opacity: sentenceFeedbackLoading ? 0.7 : 1 }}
+                style={{ position: 'absolute', bottom: '0.5rem', right: '0.5rem', padding: '0.4rem 1.2rem', fontSize: '0.8rem', minHeight: '2.2rem', opacity: sentenceFeedbackLoading ? 0.7 : 1 }}
                 type="button"
               >
                 확인
@@ -451,13 +455,22 @@ export function LearningPage() {
                 <strong style={{ fontSize: '0.9rem', color: 'var(--mint-deep)' }}>AI 문장 피드백</strong>
               </div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-                <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: '1.45', color: 'var(--text)', whiteSpace: 'pre-line' }}>
-                  {sentenceFeedbackText}
-                </p>
+                <style>{`@keyframes spinPulse { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.1); } 100% { transform: rotate(360deg) scale(1); } }`}</style>
+                {sentenceFeedbackLoading ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '0.8rem', color: 'var(--mint-deep)', padding: '1rem 0' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '2rem', animation: 'spinPulse 1.5s linear infinite' }}>autorenew</span>
+                    <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>AI가 문장을 교정하고 있어요...</p>
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: '1.45', color: 'var(--text)', whiteSpace: 'pre-line' }}>
+                    {sentenceFeedbackText}
+                  </p>
+                )}
               </div>
             </div>
           </div>
         </section>
+        </div>
       </div>
 
       {mode === 'random' ? (

@@ -143,7 +143,7 @@ export function SeriesDetailPage() {
           </section>
         </section>
 
-        <aside className="sidebar-column">
+        <aside className="sidebar-column" style={{ alignSelf: 'start' }}>
           <section className="content-card">
             <h3>시리즈 정보</h3>
             <div className="tag-row">
