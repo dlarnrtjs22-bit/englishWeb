@@ -4,6 +4,42 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.nativeflow.backend.content.mapper.ContentQueryMapper">
 
+    <sql id="isAvailableForStudyCondition">
+        (
+            not exists (
+                select 1
+                from review_schedules rs
+                where rs.user_id = cast(#{userId} as uuid)
+                  and rs.learning_item_id = ${alias}.id
+            )
+            or exists (
+                select 1
+                from review_schedules rs
+                where rs.user_id = cast(#{userId} as uuid)
+                  and rs.learning_item_id = ${alias}.id
+                  and rs.next_review_at &lt;= now()
+            )
+        )
+    </sql>
+
+    <sql id="isScheduledForFutureCondition">
+        (
+            exists (
+                select 1
+                from review_schedules rs
+                where rs.user_id = cast(#{userId} as uuid)
+                  and rs.learning_item_id = ${alias}.id
+            )
+            and not exists (
+                select 1
+                from review_schedules rs
+                where rs.user_id = cast(#{userId} as uuid)
+                  and rs.learning_item_id = ${alias}.id
+                  and rs.next_review_at &lt;= now()
+            )
+        )
+    </sql>
+
     <select id="findSeriesCards" resultType="com.nativeflow.backend.content.model.SeriesCardRow">
         select
             s.id::text as id,
@@ -12,7 +48,22 @@
             s.category as category_label,
             s.thumbnail_url as thumbnail_url,
             coalesce(
-                cast(round((sp.learned_items::numeric / nullif(sp.total_items, 0)) * 100) as integer),
+                cast(round(((
+                    (
+                        select count(*)
+                        from learning_items li
+                        join packs p on p.id = li.pack_id
+                        where p.series_id = s.id
+                          and li.is_published = true
+                          and <include refid="isScheduledForFutureCondition"><property name="alias" value="li"/></include>
+                    )::numeric / nullif((
+                        select count(*)
+                        from learning_items li
+                        join packs p on p.id = li.pack_id
+                        where p.series_id = s.id
+                          and li.is_published = true
+                    ), 0)
+                ) * 100)) as integer),
                 0
             ) as progress,
             (select count(*) from packs p where p.series_id = s.id and p.is_published = true) as pack_count,
@@ -24,9 +75,6 @@
                   and ss.status = 'active'
             ) as subscribed
         from series s
-        left join series_progress sp
-            on sp.user_id = cast(#{userId} as uuid)
-           and sp.series_id = s.id
         where s.is_published = true
         order by s.created_at asc
     </select>
@@ -39,16 +87,28 @@
             s.category as category_label,
             s.thumbnail_url as thumbnail_url,
             coalesce(
-                cast(round((sp.learned_items::numeric / nullif(sp.total_items, 0)) * 100) as integer),
+                cast(round(((
+                    (
+                        select count(*)
+                        from learning_items li
+                        join packs p on p.id = li.pack_id
+                        where p.series_id = s.id
+                          and li.is_published = true
+                          and <include refid="isScheduledForFutureCondition"><property name="alias" value="li"/></include>
+                    )::numeric / nullif((
+                        select count(*)
+                        from learning_items li
+                        join packs p on p.id = li.pack_id
+                        where p.series_id = s.id
+                          and li.is_published = true
+                    ), 0)
+                ) * 100)) as integer),
                 0
             ) as progress,
             (select count(*) from packs p where p.series_id = s.id and p.is_published = true) as pack_count,
             true as subscribed
         from series_subscriptions ss
         join series s on s.id = ss.series_id
-        left join series_progress sp
-            on sp.user_id = cast(#{userId} as uuid)
-           and sp.series_id = s.id
         where ss.user_id = cast(#{userId} as uuid)
           and ss.status = 'active'
           and s.is_published = true
@@ -63,13 +123,25 @@
             s.category as category_label,
             s.thumbnail_url as thumbnail_url,
             coalesce(
-                cast(round((sp.learned_items::numeric / nullif(sp.total_items, 0)) * 100) as integer),
+                cast(round(((
+                    (
+                        select count(*)
+                        from learning_items li
+                        join packs p on p.id = li.pack_id
+                        where p.series_id = s.id
+                          and li.is_published = true
+                          and <include refid="isScheduledForFutureCondition"><property name="alias" value="li"/></include>
+                    )::numeric / nullif((
+                        select count(*)
+                        from learning_items li
+                        join packs p on p.id = li.pack_id
+                        where p.series_id = s.id
+                          and li.is_published = true
+                    ), 0)
+                ) * 100)) as integer),
                 0
             ) as progress
         from series s
-        left join series_progress sp
-            on sp.user_id = cast(#{userId} as uuid)
-           and sp.series_id = s.id
         where s.id = cast(#{seriesId} as uuid)
           and s.is_published = true
         limit 1
@@ -92,36 +164,21 @@
                 from learning_items li
                 where li.pack_id = p.id
                   and li.is_published = true
-                  and exists (
-                      select 1
-                      from review_schedules rs
-                      where rs.user_id = cast(#{userId} as uuid)
-                        and rs.learning_item_id = li.id
-                  )
+                  and <include refid="isScheduledForFutureCondition"><property name="alias" value="li"/></include>
             ) as completed_item_count,
             (
                 select count(*)
                 from learning_items li
                 where li.pack_id = p.id
                   and li.is_published = true
-                  and not exists (
-                      select 1
-                      from review_schedules rs
-                      where rs.user_id = cast(#{userId} as uuid)
-                        and rs.learning_item_id = li.id
-                  )
+                  and <include refid="isAvailableForStudyCondition"><property name="alias" value="li"/></include>
             ) as remaining_item_count,
             (
                 select li.id::text
                 from learning_items li
                 where li.pack_id = p.id
                   and li.is_published = true
-                  and not exists (
-                      select 1
-                      from review_schedules rs
-                      where rs.user_id = cast(#{userId} as uuid)
-                        and rs.learning_item_id = li.id
-                  )
+                  and <include refid="isAvailableForStudyCondition"><property name="alias" value="li"/></include>
                 order by li.order_index asc
                 limit 1
             ) as first_item_id
@@ -136,12 +193,7 @@
         from learning_items li
         where li.pack_id = cast(#{packId} as uuid)
           and li.is_published = true
-          and not exists (
-              select 1
-              from review_schedules rs
-              where rs.user_id = cast(#{userId} as uuid)
-                and rs.learning_item_id = li.id
-          )
+          and <include refid="isAvailableForStudyCondition"><property name="alias" value="li"/></include>
         order by li.order_index asc
         limit 1
     </select>
@@ -151,12 +203,7 @@
         from learning_items li
         where li.pack_id = cast(#{packId} as uuid)
           and li.is_published = true
-          and not exists (
-              select 1
-              from review_schedules rs
-              where rs.user_id = cast(#{userId} as uuid)
-                and rs.learning_item_id = li.id
-          )
+          and <include refid="isAvailableForStudyCondition"><property name="alias" value="li"/></include>
         order by li.order_index asc
     </select>
 
@@ -179,12 +226,7 @@
                         where same_pack.pack_id = li.pack_id
                           and same_pack.is_published = true
                           and same_pack.order_index &lt;= li.order_index
-                          and not exists (
-                              select 1
-                              from review_schedules rs
-                              where rs.user_id = cast(#{userId} as uuid)
-                                and rs.learning_item_id = same_pack.id
-                          )
+                          and <include refid="isAvailableForStudyCondition"><property name="alias" value="same_pack"/></include>
                     )
                 )
                 else li.order_index
@@ -196,12 +238,7 @@
                         from learning_items same_pack
                         where same_pack.pack_id = li.pack_id
                           and same_pack.is_published = true
-                          and not exists (
-                              select 1
-                              from review_schedules rs
-                              where rs.user_id = cast(#{userId} as uuid)
-                                and rs.learning_item_id = same_pack.id
-                          )
+                          and <include refid="isAvailableForStudyCondition"><property name="alias" value="same_pack"/></include>
                     )
                     else (
                         select count(*)
@@ -228,12 +265,7 @@
             from learning_items li
             join current_item ci on ci.pack_id = li.pack_id
             where li.is_published = true
-              and not exists (
-                  select 1
-                  from review_schedules rs
-                  where rs.user_id = cast(#{userId} as uuid)
-                    and rs.learning_item_id = li.id
-              )
+              and <include refid="isAvailableForStudyCondition"><property name="alias" value="li"/></include>
         ),
         next_after as (
             select u.id::text as next_id

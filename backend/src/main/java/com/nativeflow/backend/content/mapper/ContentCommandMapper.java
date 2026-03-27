@@ -53,7 +53,8 @@ public interface ContentCommandMapper {
     void touchReviewSchedule(
             @Param("userId") String userId,
             @Param("itemId") String itemId,
-            @Param("lastResult") String lastResult
+            @Param("lastResult") String lastResult,
+            @Param("nextReviewAt") OffsetDateTime nextReviewAt
     );
 
     void updateSeriesProgressCounts(@Param("userId") String userId, @Param("seriesId") String seriesId);

@@ -138,6 +138,7 @@
     <update id="touchReviewSchedule">
         update review_schedules
         set last_reviewed_at = now(),
+            next_review_at = #{nextReviewAt},
             last_result = #{lastResult},
             updated_at = now()
         where user_id = cast(#{userId} as uuid)
@@ -159,12 +160,13 @@
                 from learning_items li
                 join packs p on p.id = li.pack_id
                 where p.series_id = cast(#{seriesId} as uuid)
-                  and li.is_published = true
+                   and li.is_published = true
                   and exists (
                       select 1
                       from review_schedules rs
                       where rs.user_id = cast(#{userId} as uuid)
                         and rs.learning_item_id = li.id
+                        and rs.next_review_at &gt; now()
                   )
             ),
             due_items = (
@@ -174,12 +176,7 @@
                 join packs p on p.id = li.pack_id
                 where rs.user_id = cast(#{userId} as uuid)
                   and p.series_id = cast(#{seriesId} as uuid)
-                  and exists (
-                      select 1
-                      from review_schedules keep_rs
-                      where keep_rs.user_id = rs.user_id
-                        and keep_rs.learning_item_id = rs.learning_item_id
-                  )
+                  and rs.next_review_at &lt;= now()
             ),
             updated_at = now()
         where sp.user_id = cast(#{userId} as uuid)

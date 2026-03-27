@@ -305,8 +305,10 @@ public class ContentService {
             }
 
             if ("review_done".equals(normalizedResult)) {
-                contentCommandMapper.touchReviewSchedule(userId, itemId, "review_done");
+                OffsetDateTime nextReviewAt = LocalDate.now(SEOUL).plusDays(1).atStartOfDay(SEOUL).toOffsetDateTime();
+                contentCommandMapper.touchReviewSchedule(userId, itemId, "review_done", nextReviewAt);
                 contentCommandMapper.insertReviewLog(userId, itemId, "review_done", 0, 0.0);
+                syncSeriesProgress(userId, itemId);
                 return new ApiResponses.ReviewScheduleResponse(true, normalizedResult, 0, 0.0, null, null);
             }
         }
