@@ -16,6 +16,7 @@ import {
   readStudyLearningSession,
   writeStudyLearningSession,
 } from '../utils/studyLearningSession';
+import { buildHighlightSegments } from '../utils/highlightDiff';
 
 const reviewOptions: Array<{ label: string; result: ReviewResult; subtitle: string }> = [
   { label: '1분 후', result: 'minute', subtitle: '1분' },
@@ -27,6 +28,17 @@ const reviewOptions: Array<{ label: string; result: ReviewResult; subtitle: stri
   { label: '1년', result: 'year', subtitle: '365일' },
   { label: '완료(복습)', result: 'complete', subtitle: '복습으로 이동' },
 ];
+
+function renderHighlightedSentence(original: string, corrected: string) {
+  return buildHighlightSegments(original, corrected).map((segment, index) => (
+    <span
+      key={`${segment.text}-${index}`}
+      style={segment.changed ? { color: 'var(--primary)', fontWeight: 700 } : undefined}
+    >
+      {segment.text}
+    </span>
+  ));
+}
 
 export function LearningPage() {
   const { itemId = '' } = useParams();
@@ -497,6 +509,30 @@ export function LearningPage() {
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '0.8rem', color: 'var(--mint-deep)', padding: '1rem 0' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '2rem', animation: 'spinPulse 1.5s linear infinite' }}>autorenew</span>
                     <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>AI가 문장을 교정하고 있어요...</p>
+                  </div>
+                ) : sentenceFeedback ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+                    <strong style={{ fontSize: '0.95rem', color: 'var(--mint-deep)' }}>{sentenceFeedback.headline}</strong>
+                    <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: '1.45', color: 'var(--text)' }}>
+                      {sentenceFeedback.message}
+                    </p>
+                    <div style={{ padding: '0.75rem', borderRadius: '0.8rem', background: 'rgba(255,255,255,0.55)' }}>
+                      <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        Corrected
+                      </p>
+                      <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.95rem', lineHeight: '1.6', color: 'var(--text)' }}>
+                        {renderHighlightedSentence(sentence, sentenceFeedback.correctedSentence)}
+                      </p>
+                    </div>
+                    {sentenceFeedback.tips.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                        {sentenceFeedback.tips.map((tip) => (
+                          <p key={tip} style={{ margin: 0, fontSize: '0.82rem', lineHeight: '1.4', color: 'var(--text)' }}>
+                            · {tip}
+                          </p>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 ) : (
                   <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: '1.45', color: 'var(--text)', whiteSpace: 'pre-line' }}>

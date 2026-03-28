@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useToast } from '../app/ToastContext';
 import { diaryService } from '../services/diaryService';
 import type { DiaryFeedbackResponse, DiaryHistoryItem } from '../types/models';
+import { buildHighlightSegments } from '../utils/highlightDiff';
 
 function formatDate(date: Date) {
   const year = date.getFullYear();
@@ -12,6 +13,17 @@ function formatDate(date: Date) {
 
 function toDisplayDate(entryDate: string) {
   return entryDate;
+}
+
+function renderHighlightedCorrection(original: string, corrected: string) {
+  return buildHighlightSegments(original, corrected).map((segment, index) => (
+    <span
+      key={`${segment.text}-${index}`}
+      style={segment.changed ? { color: 'var(--primary)', fontWeight: 700 } : undefined}
+    >
+      {segment.text}
+    </span>
+  ));
 }
 
 export function DiaryPage() {
@@ -340,7 +352,7 @@ export function DiaryPage() {
                   {correctionResult.lines.map((line, index) => (
                     <div key={`${line.correctedLine}-${index}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', paddingBottom: '0.9rem', borderBottom: '1px dashed var(--border)' }}>
                       <p style={{ margin: 0, fontSize: '1rem', lineHeight: '1.6', color: 'var(--text)', fontWeight: 600 }}>
-                        {line.correctedLine}
+                        {renderHighlightedCorrection(line.originalLine, line.correctedLine)}
                       </p>
                       <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--muted)' }}>
                         {line.translationLine}

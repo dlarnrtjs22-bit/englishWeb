@@ -106,7 +106,11 @@ public class ChatGptTokenService {
                 }
 
                 try {
-                    JsonNode root = objectMapper.readTree(Files.readString(tokenFile, StandardCharsets.UTF_8));
+                    String rawJson = Files.readString(tokenFile, StandardCharsets.UTF_8);
+                    if (!rawJson.isEmpty() && rawJson.charAt(0) == '\uFEFF') {
+                        rawJson = rawJson.substring(1);
+                    }
+                    JsonNode root = objectMapper.readTree(rawJson);
                     if (!(root instanceof ObjectNode objectNode)) {
                         throw new ApiException(
                                 ErrorCode.CONFIGURATION_ERROR,
