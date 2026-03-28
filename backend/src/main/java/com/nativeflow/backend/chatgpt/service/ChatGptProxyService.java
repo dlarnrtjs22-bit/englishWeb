@@ -129,6 +129,13 @@ public class ChatGptProxyService {
                 tips (array of up to 3 short Korean strings).
                 If the sentence is already natural and correct, set perfect to true.
                 If the target expression is missing or unnatural, suggest one corrected sentence that uses it naturally.
+                If the learner writes in Korean or mostly Korean, treat it as "I want to say this in English."
+                In that case, do not treat the Korean sentence as already correct.
+                Convert the Korean meaning into one natural English sentence.
+                Try to use the target expression when it fits naturally.
+                If the learner writes in Korean or mostly Korean, set perfect to false.
+                If the learner sentence is already acceptable and natural English, do not force a rewrite just because another version sounds slightly different.
+                Only correct when there is a clear grammar, spelling, tense, word choice, or naturalness issue.
                 Do not return markdown. Do not wrap the JSON in code fences.
                 """
         );
@@ -181,6 +188,9 @@ public class ChatGptProxyService {
                 advice (array of short Korean advice)
                 Rules:
                 - First decide whether the diary is already grammatically correct, spelled correctly, and natural for everyday English.
+                - If the diary contains Korean or is mostly Korean, interpret it as the learner expressing ideas they do not yet know how to write in English.
+                - In that case, rewrite it into natural everyday English instead of treating it as already correct.
+                - If the diary contains Korean or is mostly Korean, set perfect to false.
                 - If the diary is already correct and natural, do not rewrite it just for style.
                 - If the diary is already good, set perfect to true.
                 - When perfect is true:

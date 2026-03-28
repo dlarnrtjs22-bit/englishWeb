@@ -144,6 +144,21 @@ export function DiaryPage() {
     }
   };
 
+  const speakEnglish = (text: string) => {
+    const normalized = text.trim();
+    if (!normalized) {
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(normalized);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.95;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const extractKeywordEnglish = (keyword: string) => keyword.split(':')[0]?.trim() ?? keyword.trim();
+
   return (
     <div className="page-stack">
       <section className="section-header" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'stretch' }}>
@@ -351,9 +366,19 @@ export function DiaryPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   {correctionResult.lines.map((line, index) => (
                     <div key={`${line.correctedLine}-${index}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', paddingBottom: '0.9rem', borderBottom: '1px dashed var(--border)' }}>
-                      <p style={{ margin: 0, fontSize: '1rem', lineHeight: '1.6', color: 'var(--text)', fontWeight: 600 }}>
-                        {renderHighlightedCorrection(line.originalLine, line.correctedLine)}
-                      </p>
+                      <div className="split-line" style={{ alignItems: 'flex-start', gap: '0.75rem' }}>
+                        <p style={{ margin: 0, flex: 1, fontSize: '1rem', lineHeight: '1.6', color: 'var(--text)', fontWeight: 600 }}>
+                          {renderHighlightedCorrection(line.originalLine, line.correctedLine)}
+                        </p>
+                        <button
+                          className="icon-button"
+                          onClick={() => speakEnglish(line.correctedLine)}
+                          type="button"
+                          style={{ width: '2rem', minHeight: '2rem', flexShrink: 0 }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>volume_up</span>
+                        </button>
+                      </div>
                       <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--muted)' }}>
                         {line.translationLine}
                       </p>
@@ -367,9 +392,19 @@ export function DiaryPage() {
                       <h4 style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '0.5rem' }}>주요 사용 단어</h4>
                       <div className="tag-row">
                         {correctionResult.keywords.map((keyword) => (
-                          <span key={keyword} className="tag neutral" style={{ background: 'var(--surface-low)' }}>
-                            {keyword}
-                          </span>
+                          <div key={keyword} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <span className="tag neutral" style={{ background: 'var(--surface-low)' }}>
+                              {keyword}
+                            </span>
+                            <button
+                              className="icon-button"
+                              onClick={() => speakEnglish(extractKeywordEnglish(keyword))}
+                              type="button"
+                              style={{ width: '1.9rem', minHeight: '1.9rem' }}
+                            >
+                              <span className="material-symbols-outlined" style={{ fontSize: '0.95rem' }}>volume_up</span>
+                            </button>
+                          </div>
                         ))}
                       </div>
                     </div>
