@@ -49,6 +49,21 @@ public class ContentService {
                 .map(row -> toSeriesSummary(row, deriveSubtitle(row), null))
                 .toList();
 
+        int progressPercent = activeSeries.isEmpty()
+                ? 0
+                : (int) Math.round(activeSeries.stream()
+                        .mapToInt(ApiResponses.SeriesSummaryDto::progress)
+                        .average()
+                        .orElse(0.0));
+
+        String progressMessage = activeSeries.isEmpty()
+                ? "먼저 오늘의 학습 시리즈를 살펴보세요."
+                : progressPercent <= 0
+                        ? "가볍게 한 문제부터 시작해보세요."
+                        : progressPercent >= 100
+                                ? "오늘 목표를 모두 채웠습니다."
+                                : "이어서 학습할 준비가 되어 있습니다.";
+
         List<ApiResponses.SeriesSummaryDto> recommendedSeries = allSeries.stream()
                 .filter(row -> !row.isSubscribed())
                 .limit(3)
@@ -57,7 +72,7 @@ public class ContentService {
 
         return new ApiResponses.DashboardResponse(
                 userName,
-                activeSeries.isEmpty() ? 0 : 65,
+                progressPercent,
                 activeSeries.isEmpty() ? "먼저 오늘의 시리즈를 하나 골라보세요." : "이어서 학습할 준비가 되어 있습니다.",
                 new ApiResponses.ReviewSummaryDto(
                         stats.getDueCount(),

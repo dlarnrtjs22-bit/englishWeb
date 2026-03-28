@@ -28,7 +28,31 @@ public class ContentController {
 
     @GetMapping("/dashboard")
     public ApiResponses.DashboardResponse dashboard(@CurrentUser AuthenticatedUser authenticatedUser) {
-        return contentService.getDashboard(authenticatedUser.userId(), authenticatedUser.name());
+        ApiResponses.DashboardResponse response = contentService.getDashboard(authenticatedUser.userId(), authenticatedUser.name());
+        int progressPercent = response.activeSeries().isEmpty()
+                ? 0
+                : (int) Math.round(response.activeSeries().stream()
+                        .mapToInt(ApiResponses.SeriesSummaryDto::progress)
+                        .average()
+                        .orElse(0.0));
+
+        String progressMessage = response.activeSeries().isEmpty()
+                ? "먼저 오늘의 학습 시리즈를 살펴보세요."
+                : progressPercent <= 0
+                        ? "가볍게 한 문제부터 시작해보세요."
+                        : progressPercent >= 100
+                                ? "오늘 목표를 모두 채웠습니다."
+                                : "이어서 학습할 준비가 되어 있습니다.";
+
+        return new ApiResponses.DashboardResponse(
+                response.userName(),
+                progressPercent,
+                progressMessage,
+                response.reviewSummary(),
+                response.activeSeries(),
+                response.recommendedSeries(),
+                response.stats()
+        );
     }
 
     @GetMapping("/series")

@@ -351,35 +351,46 @@ export function LearningPage() {
         `}</style>
         <div className="learning-scroll-container" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1 }}>
           <section className="learning-main-row" style={{ justifyItems: 'stretch', width: '100%', alignItems: 'stretch' }}>
-          <article className="learning-panel learning-half" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-            <div className="learning-head-copy">
-              <h1 style={{ fontSize: '1.6rem', marginBottom: '0.3rem' }}>{data.sourceText}</h1>
-              <p style={{ fontSize: '0.9rem' }}>{data.nuanceNote}</p>
-            </div>
+          <article className="learning-panel learning-half" style={{ padding: 0, display: 'grid', gridTemplateColumns: '7fr minmax(130px, 3fr)', overflow: 'hidden' }}>
+            <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.8rem', minHeight: '100%' }}>
+              <div className="learning-head-copy">
+                <h1 style={{ fontSize: '1.6rem', marginBottom: '0.3rem' }}>{data.sourceText}</h1>
+                <p style={{ fontSize: '0.9rem' }}>{data.nuanceNote}</p>
+              </div>
 
-            <div className="split-line">
-              <h3 style={{ fontSize: '1.05rem', margin: 0 }}>정답 입력</h3>
-              <button
-                className={`icon-button bordered${favorite ? ' active' : ''}`}
-                onClick={() => void handleFavorite()}
-                type="button"
-                style={{ width: '2.2rem', minHeight: '2.2rem' }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>bookmark</span>
+              <div className="split-line">
+                <h3 style={{ fontSize: '1.05rem', margin: 0 }}>정답 입력</h3>
+                <button
+                  className={`icon-button bordered${favorite ? ' active' : ''}`}
+                  onClick={() => void handleFavorite()}
+                  type="button"
+                  style={{ width: '2.2rem', minHeight: '2.2rem' }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>bookmark</span>
+                </button>
+              </div>
+
+              <textarea
+                className="answer-input"
+                onChange={(event) => setAnswer(event.target.value)}
+                rows={4}
+                value={answer}
+                style={{ minHeight: '5rem', fontSize: '0.95rem', padding: '0.75rem' }}
+              />
+
+              <button className="button primary wide" onClick={() => void handleCheckAnswer()} type="button" style={{ padding: '0.6rem', fontSize: '0.95rem' }}>
+                정답 확인
               </button>
             </div>
 
-            <textarea
-              className="answer-input"
-              onChange={(event) => setAnswer(event.target.value)}
-              rows={4}
-              value={answer}
-              style={{ minHeight: '5rem', fontSize: '0.95rem', padding: '0.75rem' }}
-            />
-
-            <button className="button primary wide" onClick={() => void handleCheckAnswer()} type="button" style={{ padding: '0.6rem', fontSize: '0.95rem' }}>
-              정답 확인
-            </button>
+            <div style={{ background: 'var(--surface-high)', position: 'relative', borderLeft: '1px solid var(--border)', minHeight: '100%' }}>
+              {/* 이미지 영역 (3 View) */}
+              <img 
+                src="https://images.unsplash.com/photo-1544457070-4cd773b4d71e?auto=format&fit=crop&q=80&w=400" 
+                alt="Context visualization" 
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
+              />
+            </div>
           </article>
 
           <article className={`learning-panel learning-half answer-card${answerResult?.isCorrect ? ' success' : ''}${!answerCard ? ' answer-card-hidden' : ''}`} style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
