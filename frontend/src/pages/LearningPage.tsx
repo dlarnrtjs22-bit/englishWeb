@@ -117,6 +117,12 @@ export function LearningPage() {
           .join('\n\n')
       : '문장을 직접 만들어보며 표현을 익혀보세요.';
 
+  const learningImageSrc = data.imagePath
+    ? data.imagePath.startsWith('/')
+      ? data.imagePath
+      : `/${data.imagePath}`
+    : null;
+
   const speak = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
@@ -385,11 +391,31 @@ export function LearningPage() {
 
             <div style={{ background: 'var(--surface-high)', position: 'relative', borderLeft: '1px solid var(--border)', minHeight: '100%' }}>
               {/* 이미지 영역 (3 View) */}
-              <img 
-                src="https://images.unsplash.com/photo-1544457070-4cd773b4d71e?auto=format&fit=crop&q=80&w=400" 
-                alt="Context visualization" 
-                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
-              />
+              {learningImageSrc ? (
+                <img
+                  src={learningImageSrc}
+                  alt={`${data.targetText} example`}
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '1.25rem',
+                    textAlign: 'center',
+                    background: 'linear-gradient(180deg, rgba(248, 251, 255, 0.92), rgba(235, 244, 244, 0.96))',
+                    color: 'var(--muted)',
+                    fontSize: '0.95rem',
+                    lineHeight: 1.6,
+                  }}
+                >
+                  이미지 준비중입니다! 고마워요!
+                </div>
+              )}
             </div>
           </article>
 

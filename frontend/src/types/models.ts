@@ -91,6 +91,7 @@ export interface LearningItemResponse {
   exampleSentence: string;
   exampleTranslation: string;
   id: string;
+  imagePath?: string | null;
   nuanceNote: string;
   progress: {
     current: number;

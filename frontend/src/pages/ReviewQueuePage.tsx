@@ -112,7 +112,7 @@ export function ReviewQueuePage() {
           </div>
         </section>
 
-        <aside className="sidebar-column">
+        <aside className="sidebar-column" style={{ alignSelf: 'start' }}>
           <section className="content-card">
             <h3>복습 히스토리</h3>
             <div className="chart-bars">

@@ -7,6 +7,7 @@ public class LearningItemRow {
     private String sourceText;
     private String targetText;
     private String nuanceNote;
+    private String imagePath;
     private String exampleSentence;
     private String exampleTranslation;
     private int orderIndex;
@@ -51,6 +52,14 @@ public class LearningItemRow {
 
     public void setNuanceNote(String nuanceNote) {
         this.nuanceNote = nuanceNote;
+    }
+
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
     }
 
     public String getExampleSentence() {

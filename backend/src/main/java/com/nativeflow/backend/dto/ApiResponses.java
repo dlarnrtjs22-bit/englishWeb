@@ -77,6 +77,7 @@ public final class ApiResponses {
             String sourceText,
             String targetText,
             String nuanceNote,
+            String imagePath,
             String exampleSentence,
             String exampleTranslation,
             String aiFeedback,

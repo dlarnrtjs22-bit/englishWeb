@@ -214,6 +214,7 @@
             li.source_text,
             li.target_text,
             li.nuance_note,
+            li.image_path,
             li.example_sentence,
             li.example_translation,
             li.order_index as order_index,

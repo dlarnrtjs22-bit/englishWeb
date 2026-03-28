@@ -154,6 +154,7 @@ public class ContentService {
                 row.getSourceText(),
                 row.getTargetText(),
                 row.getNuanceNote(),
+                row.getImagePath(),
                 row.getExampleSentence(),
                 row.getExampleTranslation(),
                 "문장을 직접 만들어보며 표현을 익혀보세요.",
