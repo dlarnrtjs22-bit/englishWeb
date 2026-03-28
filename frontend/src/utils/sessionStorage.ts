@@ -55,6 +55,26 @@ export function writeStoredSession(session: AuthResponse, rememberMe: boolean) {
   localStorage.removeItem(STORAGE_KEY);
 }
 
+export function updateStoredSession(session: AuthResponse) {
+  const payload = JSON.stringify({
+    accessToken: session.accessToken,
+    refreshToken: session.refreshToken,
+    user: session.user,
+  });
+
+  if (localStorage.getItem(STORAGE_KEY)) {
+    localStorage.setItem(STORAGE_KEY, payload);
+    return;
+  }
+
+  if (sessionStorage.getItem(STORAGE_KEY)) {
+    sessionStorage.setItem(STORAGE_KEY, payload);
+    return;
+  }
+
+  localStorage.setItem(STORAGE_KEY, payload);
+}
+
 export function clearStoredSession() {
   localStorage.removeItem(STORAGE_KEY);
   sessionStorage.removeItem(STORAGE_KEY);
@@ -62,4 +82,8 @@ export function clearStoredSession() {
 
 export function getAccessToken() {
   return readStoredSession()?.accessToken ?? null;
+}
+
+export function getRefreshToken() {
+  return readStoredSession()?.refreshToken ?? null;
 }

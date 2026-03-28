@@ -44,6 +44,11 @@ public class AuthController {
         return authService.signup(request, clientRequestMetadataResolver.resolve(httpServletRequest));
     }
 
+    @PostMapping("/refresh")
+    public AuthDtos.AuthResponse refresh(@Valid @RequestBody AuthDtos.RefreshRequest request) {
+        return authService.refresh(request);
+    }
+
     @PostMapping("/logout")
     public AuthDtos.LogoutResponse logout(@CurrentUser AuthenticatedUser authenticatedUser) {
         return authService.logout(authenticatedUser.sessionId());

@@ -19,5 +19,13 @@ public interface AuthSessionMapper {
 
     AuthSessionEntity findActiveSessionById(@Param("sessionId") String sessionId);
 
+    AuthSessionEntity findActiveSessionByRefreshTokenHash(@Param("refreshTokenHash") String refreshTokenHash);
+
+    int rotateRefreshToken(
+            @Param("sessionId") String sessionId,
+            @Param("refreshTokenHash") String refreshTokenHash,
+            @Param("expiresAt") OffsetDateTime expiresAt
+    );
+
     int deactivateSession(@Param("sessionId") String sessionId);
 }

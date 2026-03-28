@@ -17,6 +17,12 @@ export const authService = {
   getMe() {
     return apiRequest<UserProfile>('/auth/me', { method: 'GET' });
   },
+  refresh(refreshToken: string) {
+    return apiRequest<AuthResponse>('/auth/refresh', {
+      body: JSON.stringify({ refreshToken }),
+      method: 'POST',
+    });
+  },
   login(payload: LoginPayload) {
     return apiRequest<AuthResponse>('/auth/login', {
       body: JSON.stringify(payload),

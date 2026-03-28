@@ -36,6 +36,28 @@
         limit 1
     </select>
 
+    <select id="findActiveSessionByRefreshTokenHash" parameterType="string" resultType="com.nativeflow.backend.auth.model.AuthSessionEntity">
+        select
+            id::text as id,
+            user_id::text as user_id,
+            refresh_token_hash,
+            is_active as active,
+            expires_at
+        from auth_sessions
+        where refresh_token_hash = #{refreshTokenHash}
+          and is_active = true
+        limit 1
+    </select>
+
+    <update id="rotateRefreshToken">
+        update auth_sessions
+        set refresh_token_hash = #{refreshTokenHash},
+            expires_at = #{expiresAt},
+            updated_at = now()
+        where id = cast(#{sessionId} as uuid)
+          and is_active = true
+    </update>
+
     <update id="deactivateSession" parameterType="string">
         update auth_sessions
         set is_active = false,

@@ -109,6 +109,40 @@ public class AuthService {
         return issueTokens(profile, subscription, metadata);
     }
 
+    @Transactional
+    public AuthDtos.AuthResponse refresh(AuthDtos.RefreshRequest request) {
+        String refreshToken = request.refreshToken().trim();
+        AuthSessionEntity session = authSessionMapper.findActiveSessionByRefreshTokenHash(hashToken(refreshToken));
+
+        if (session == null || !session.isActive() || session.getExpiresAt().isBefore(OffsetDateTime.now())) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, HttpStatus.UNAUTHORIZED, "로그인 세션이 만료되었습니다. 다시 로그인해주세요.");
+        }
+
+        UserProfileEntity profile = requireUserProfile(session.getUserId());
+        SubscriptionAccessEntity subscription = requireAccessibleSubscription(session.getUserId());
+        contentService.syncPublishedSeriesAccess(session.getUserId());
+
+        String rotatedRefreshToken = generateRefreshToken();
+        OffsetDateTime expiresAt = OffsetDateTime.now().plusSeconds(jwtTokenProvider.getRefreshTokenValiditySeconds());
+        authSessionMapper.rotateRefreshToken(session.getId(), hashToken(rotatedRefreshToken), expiresAt);
+
+        String accessToken = jwtTokenProvider.createAccessToken(
+                profile.getId(),
+                session.getId(),
+                profile.getName(),
+                profile.getEmail(),
+                profile.getRole()
+        );
+
+        return new AuthDtos.AuthResponse(
+                toProfileResponse(profile, subscription),
+                accessToken,
+                rotatedRefreshToken,
+                "Bearer",
+                jwtTokenProvider.getAccessTokenValiditySeconds()
+        );
+    }
+
     public AuthDtos.UserProfileResponse me(String userId) {
         UserProfileEntity profile = requireUserProfile(userId);
         SubscriptionAccessEntity subscription = requireAccessibleSubscription(userId);
