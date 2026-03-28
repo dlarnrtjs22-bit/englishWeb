@@ -6,7 +6,7 @@ const navigationItems = [
   { icon: 'subscriptions', label: '나의 학습 시리즈', path: '/my-series' },
   { icon: 'bookmark', label: '저장한 표현', path: '/favorites' },
   { icon: 'rebase_edit', label: '복습 큐', path: '/reviews' },
-  { icon: 'edit_square', label: '읽기 쓰기', path: '/diary' },
+  { icon: 'edit_square', label: '나의 영어 일기', path: '/diary' },
   { icon: 'settings', label: '설정', path: '/settings' },
 ];
 
