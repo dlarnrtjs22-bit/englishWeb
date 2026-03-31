@@ -145,6 +145,32 @@
           and learning_item_id = cast(#{itemId} as uuid)
     </update>
 
+    <insert id="upsertCompletedLearningItem">
+        insert into completed_learning_items (
+            user_id,
+            learning_item_id,
+            completed_at,
+            last_reviewed_at
+        ) values (
+            cast(#{userId} as uuid),
+            cast(#{itemId} as uuid),
+            now(),
+            null
+        )
+        on conflict (user_id, learning_item_id) do update
+        set completed_at = now(),
+            last_reviewed_at = null,
+            updated_at = now()
+    </insert>
+
+    <update id="touchCompletedLearningItem">
+        update completed_learning_items
+        set last_reviewed_at = now(),
+            updated_at = now()
+        where user_id = cast(#{userId} as uuid)
+          and learning_item_id = cast(#{itemId} as uuid)
+    </update>
+
     <update id="updateSeriesProgressCounts">
         update series_progress sp
         set
@@ -160,13 +186,21 @@
                 from learning_items li
                 join packs p on p.id = li.pack_id
                 where p.series_id = cast(#{seriesId} as uuid)
-                   and li.is_published = true
-                  and exists (
-                      select 1
-                      from review_schedules rs
-                      where rs.user_id = cast(#{userId} as uuid)
-                        and rs.learning_item_id = li.id
-                        and rs.next_review_at &gt; now()
+                  and li.is_published = true
+                  and (
+                      exists (
+                          select 1
+                          from completed_learning_items cli
+                          where cli.user_id = cast(#{userId} as uuid)
+                            and cli.learning_item_id = li.id
+                      )
+                      or exists (
+                          select 1
+                          from review_schedules rs
+                          where rs.user_id = cast(#{userId} as uuid)
+                            and rs.learning_item_id = li.id
+                            and rs.next_review_at &gt; now()
+                      )
                   )
             ),
             due_items = (
@@ -185,6 +219,12 @@
 
     <delete id="deleteReviewSchedule">
         delete from review_schedules
+        where user_id = cast(#{userId} as uuid)
+          and learning_item_id = cast(#{itemId} as uuid)
+    </delete>
+
+    <delete id="deleteCompletedLearningItem">
+        delete from completed_learning_items
         where user_id = cast(#{userId} as uuid)
           and learning_item_id = cast(#{itemId} as uuid)
     </delete>

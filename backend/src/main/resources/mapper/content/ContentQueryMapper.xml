@@ -8,16 +8,24 @@
         (
             not exists (
                 select 1
-                from review_schedules rs
-                where rs.user_id = cast(#{userId} as uuid)
-                  and rs.learning_item_id = ${alias}.id
+                from completed_learning_items cli
+                where cli.user_id = cast(#{userId} as uuid)
+                  and cli.learning_item_id = ${alias}.id
             )
-            or exists (
-                select 1
-                from review_schedules rs
-                where rs.user_id = cast(#{userId} as uuid)
-                  and rs.learning_item_id = ${alias}.id
-                  and rs.next_review_at &lt;= now()
+            and (
+                not exists (
+                    select 1
+                    from review_schedules rs
+                    where rs.user_id = cast(#{userId} as uuid)
+                      and rs.learning_item_id = ${alias}.id
+                )
+                or exists (
+                    select 1
+                    from review_schedules rs
+                    where rs.user_id = cast(#{userId} as uuid)
+                      and rs.learning_item_id = ${alias}.id
+                      and rs.next_review_at &lt;= now()
+                )
             )
         )
     </sql>
@@ -26,17 +34,45 @@
         (
             exists (
                 select 1
-                from review_schedules rs
-                where rs.user_id = cast(#{userId} as uuid)
-                  and rs.learning_item_id = ${alias}.id
+                from completed_learning_items cli
+                where cli.user_id = cast(#{userId} as uuid)
+                  and cli.learning_item_id = ${alias}.id
             )
-            and not exists (
-                select 1
-                from review_schedules rs
-                where rs.user_id = cast(#{userId} as uuid)
-                  and rs.learning_item_id = ${alias}.id
-                  and rs.next_review_at &lt;= now()
+            or (
+                exists (
+                    select 1
+                    from review_schedules rs
+                    where rs.user_id = cast(#{userId} as uuid)
+                      and rs.learning_item_id = ${alias}.id
+                )
+                and not exists (
+                    select 1
+                    from review_schedules rs
+                    where rs.user_id = cast(#{userId} as uuid)
+                      and rs.learning_item_id = ${alias}.id
+                      and rs.next_review_at &lt;= now()
+                )
             )
+        )
+    </sql>
+
+    <sql id="isCompletedReviewCondition">
+        exists (
+            select 1
+            from completed_learning_items cli
+            where cli.user_id = cast(#{userId} as uuid)
+              and cli.learning_item_id = ${alias}.id
+        )
+    </sql>
+
+    <sql id="isReviewDoneTodayCondition">
+        exists (
+            select 1
+            from review_logs rl
+            where rl.user_id = cast(#{userId} as uuid)
+              and rl.learning_item_id = ${alias}.id
+              and rl.result = 'review_done'
+              and (rl.reviewed_at at time zone 'Asia/Seoul')::date = (now() at time zone 'Asia/Seoul')::date
         )
     </sql>
 
@@ -293,14 +329,17 @@
             select
                 li.id::text as next_id,
                 case when li.id = cast(#{itemId} as uuid) then 1 else 0 end as is_current,
-                coalesce(rs.next_review_at, now()) as next_review_at
-            from review_schedules rs
-            join learning_items li on li.id = rs.learning_item_id
-            where rs.user_id = cast(#{userId} as uuid)
+                coalesce(cli.last_reviewed_at, cli.completed_at, now()) as sort_at
+            from completed_learning_items cli
+            join learning_items li on li.id = cli.learning_item_id
+            where cli.user_id = cast(#{userId} as uuid)
+              and not (
+                  <include refid="isReviewDoneTodayCondition"><property name="alias" value="li"/></include>
+              )
         )
         select next_id
         from candidates
-        order by is_current asc, next_review_at asc
+        order by is_current asc, sort_at asc
         limit 1
     </select>
 
@@ -386,27 +425,22 @@
             li.source_text,
             s.title as series_title,
             li.example_sentence as context_text
-        from review_schedules rs
-        join learning_items li on li.id = rs.learning_item_id
+        from completed_learning_items cli
+        join learning_items li on li.id = cli.learning_item_id
         join packs p on p.id = li.pack_id
         join series s on s.id = p.series_id
-        where rs.user_id = cast(#{userId} as uuid)
-          and not exists (
-              select 1
-              from review_logs rl
-              where rl.user_id = rs.user_id
-                and rl.learning_item_id = rs.learning_item_id
-                and rl.result = 'review_done'
-                and (rl.reviewed_at at time zone 'Asia/Seoul')::date = (now() at time zone 'Asia/Seoul')::date
+        where cli.user_id = cast(#{userId} as uuid)
+          and not (
+              <include refid="isReviewDoneTodayCondition"><property name="alias" value="li"/></include>
           )
-        order by rs.next_review_at asc
+        order by coalesce(cli.last_reviewed_at, cli.completed_at) asc, li.order_index asc
     </select>
 
     <select id="findDashboardStats" resultType="com.nativeflow.backend.content.model.DashboardStatsRow">
         select
             (select count(*)
-             from review_schedules rs
-             where rs.user_id = cast(#{userId} as uuid)) as due_count,
+             from completed_learning_items cli
+             where cli.user_id = cast(#{userId} as uuid)) as due_count,
             (select count(distinct rl.learning_item_id)
              from review_logs rl
              where rl.user_id = cast(#{userId} as uuid)

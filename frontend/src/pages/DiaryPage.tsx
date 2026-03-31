@@ -38,6 +38,8 @@ export function DiaryPage() {
   const [writtenDates, setWrittenDates] = useState<string[]>([]);
   const [historyItems, setHistoryItems] = useState<DiaryHistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [hideEnglishCorrections, setHideEnglishCorrections] = useState(false);
+  const [peekEnglishLineIndex, setPeekEnglishLineIndex] = useState<number | null>(null);
 
   const selectedDateObj = useMemo(() => new Date(`${selectedDate}T00:00:00`), [selectedDate]);
   const dates = useMemo(
@@ -96,6 +98,26 @@ export function DiaryPage() {
   useEffect(() => {
     void loadHistory();
   }, []);
+
+  useEffect(() => {
+    setPeekEnglishLineIndex(null);
+  }, [hideEnglishCorrections, correctionResult, selectedDate]);
+
+  useEffect(() => {
+    if (peekEnglishLineIndex === null) {
+      return;
+    }
+
+    const clearPeek = () => setPeekEnglishLineIndex(null);
+
+    window.addEventListener('pointerup', clearPeek);
+    window.addEventListener('pointercancel', clearPeek);
+
+    return () => {
+      window.removeEventListener('pointerup', clearPeek);
+      window.removeEventListener('pointercancel', clearPeek);
+    };
+  }, [peekEnglishLineIndex]);
 
   const handleDateChange = (dateStr: string) => {
     if (dateStr > today) {
@@ -334,8 +356,20 @@ export function DiaryPage() {
               <p className="eyebrow">AI Feedback</p>
               <h3 style={{ color: 'var(--mint-deep)' }}>AI 첨삭 결과</h3>
             </div>
-            <div className="icon-badge mint">
-              <span className="material-symbols-outlined">auto_awesome</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              {correctionResult ? (
+                <button
+                  className="button secondary"
+                  onClick={() => setHideEnglishCorrections((prev) => !prev)}
+                  type="button"
+                  style={{ minHeight: '2.35rem', paddingInline: '0.9rem', fontSize: '0.85rem' }}
+                >
+                  {hideEnglishCorrections ? '\uC601\uC5B4 \uBB38\uC7A5 \uBCF4\uAE30' : '\uC601\uC5B4 \uBB38\uC7A5 \uC228\uAE30\uAE30'}
+                </button>
+              ) : null}
+              <div className="icon-badge mint">
+                <span className="material-symbols-outlined">auto_awesome</span>
+              </div>
             </div>
           </div>
 
@@ -366,19 +400,57 @@ export function DiaryPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   {correctionResult.lines.map((line, index) => (
                     <div key={`${line.correctedLine}-${index}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', paddingBottom: '0.9rem', borderBottom: '1px dashed var(--border)' }}>
-                      <div className="split-line" style={{ alignItems: 'flex-start', gap: '0.75rem' }}>
-                        <p style={{ margin: 0, flex: 1, fontSize: '1rem', lineHeight: '1.6', color: 'var(--text)', fontWeight: 600 }}>
-                          {renderHighlightedCorrection(line.originalLine, line.correctedLine)}
-                        </p>
-                        <button
-                          className="icon-button"
-                          onClick={() => speakEnglish(line.correctedLine)}
-                          type="button"
-                          style={{ width: '2rem', minHeight: '2rem', flexShrink: 0 }}
-                        >
-                          <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>volume_up</span>
-                        </button>
-                      </div>
+                      {hideEnglishCorrections && peekEnglishLineIndex !== index ? (
+                        <div className="split-line" style={{ alignItems: 'flex-start', gap: '0.75rem' }}>
+                          <button
+                            type="button"
+                            onPointerDown={(event) => {
+                              event.preventDefault();
+                              setPeekEnglishLineIndex(index);
+                            }}
+                            style={{
+                              minHeight: '2.75rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              flex: 1,
+                              width: '100%',
+                              padding: '0.7rem 0.9rem',
+                              borderRadius: '0.85rem',
+                              background: 'rgba(24, 33, 121, 0.06)',
+                              color: 'var(--muted)',
+                              fontSize: '0.9rem',
+                              fontWeight: 600,
+                              border: '1px dashed rgba(24, 33, 121, 0.18)',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                            }}
+                          >
+                            {'\uC601\uC5B4 \uBB38\uC7A5\uC744 \uC228\uACBC\uC2B5\uB2C8\uB2E4. \uB204\uB974\uACE0 \uC788\uC744 \uB54C\uB9CC \uC774 \uC904\uC758 \uC601\uC5B4 \uBB38\uC7A5\uC774 \uBCF4\uC785\uB2C8\uB2E4.'}
+                          </button>
+                          <button
+                            className="icon-button"
+                            onClick={() => speakEnglish(line.correctedLine)}
+                            type="button"
+                            style={{ width: '2rem', minHeight: '2rem', flexShrink: 0 }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>volume_up</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="split-line" style={{ alignItems: 'flex-start', gap: '0.75rem' }}>
+                          <p style={{ margin: 0, flex: 1, fontSize: '1rem', lineHeight: '1.6', color: 'var(--text)', fontWeight: 600 }}>
+                            {renderHighlightedCorrection(line.originalLine, line.correctedLine)}
+                          </p>
+                          <button
+                            className="icon-button"
+                            onClick={() => speakEnglish(line.correctedLine)}
+                            type="button"
+                            style={{ width: '2rem', minHeight: '2rem', flexShrink: 0 }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>volume_up</span>
+                          </button>
+                        </div>
+                      )}
                       <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--muted)' }}>
                         {line.translationLine}
                       </p>

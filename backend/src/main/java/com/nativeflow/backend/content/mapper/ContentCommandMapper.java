@@ -57,11 +57,17 @@ public interface ContentCommandMapper {
             @Param("nextReviewAt") OffsetDateTime nextReviewAt
     );
 
+    void upsertCompletedLearningItem(@Param("userId") String userId, @Param("itemId") String itemId);
+
+    void touchCompletedLearningItem(@Param("userId") String userId, @Param("itemId") String itemId);
+
     void updateSeriesProgressCounts(@Param("userId") String userId, @Param("seriesId") String seriesId);
 
     String findSeriesIdByLearningItem(@Param("itemId") String itemId);
 
     void deleteReviewSchedule(@Param("userId") String userId, @Param("itemId") String itemId);
+
+    void deleteCompletedLearningItem(@Param("userId") String userId, @Param("itemId") String itemId);
 
     void deleteUserAnswersForItem(@Param("userId") String userId, @Param("itemId") String itemId);
 }

@@ -247,6 +247,7 @@ public class ContentService {
 
     public ApiResponses.ActionSuccessResponse resetLearningItem(String userId, String itemId) {
         contentCommandMapper.deleteReviewSchedule(userId, itemId);
+        contentCommandMapper.deleteCompletedLearningItem(userId, itemId);
         contentCommandMapper.deleteUserAnswersForItem(userId, itemId);
         syncSeriesProgress(userId, itemId);
         return new ApiResponses.ActionSuccessResponse(true);
@@ -321,12 +322,27 @@ public class ContentService {
             }
 
             if ("review_done".equals(normalizedResult)) {
-                OffsetDateTime nextReviewAt = LocalDate.now(SEOUL).plusDays(1).atStartOfDay(SEOUL).toOffsetDateTime();
-                contentCommandMapper.touchReviewSchedule(userId, itemId, "review_done", nextReviewAt);
+                contentCommandMapper.touchCompletedLearningItem(userId, itemId);
                 contentCommandMapper.insertReviewLog(userId, itemId, "review_done", 0, 0.0);
                 syncSeriesProgress(userId, itemId);
                 return new ApiResponses.ReviewScheduleResponse(true, normalizedResult, 0, 0.0, null, null);
             }
+        }
+
+        if ("study".equals(normalizedMode) && "complete".equals(normalizedResult)) {
+            contentCommandMapper.deleteReviewSchedule(userId, itemId);
+            contentCommandMapper.upsertCompletedLearningItem(userId, itemId);
+            contentCommandMapper.insertReviewLog(userId, itemId, normalizedResult, 0, 0.0);
+            syncSeriesProgress(userId, itemId);
+
+            return new ApiResponses.ReviewScheduleResponse(
+                    true,
+                    normalizedResult,
+                    0,
+                    0.0,
+                    null,
+                    selectNextItemId(userId, itemId, normalizedMode, normalizedResult)
+            );
         }
 
         int intervalDays = resolveIntervalDays(normalizedResult, normalizedMode);
@@ -334,6 +350,7 @@ public class ContentService {
         int repetitionCount = resolveRepetitionCount(normalizedResult, normalizedMode);
         OffsetDateTime nextReviewAt = resolveNextReviewAt(normalizedResult, normalizedMode, intervalDays);
 
+        contentCommandMapper.deleteCompletedLearningItem(userId, itemId);
         contentCommandMapper.upsertReviewSchedule(userId, itemId, normalizedResult, intervalDays, repetitionCount, easeFactor, nextReviewAt);
         contentCommandMapper.insertReviewLog(userId, itemId, normalizedResult, intervalDays, easeFactor);
         syncSeriesProgress(userId, itemId);
@@ -382,18 +399,10 @@ public class ContentService {
             return OffsetDateTime.now().plusMinutes(1);
         }
 
-        if ("study".equals(mode) && "complete".equals(normalizedResult)) {
-            return LocalDate.now(SEOUL).plusDays(1).atStartOfDay(SEOUL).toOffsetDateTime();
-        }
-
         return resolveNextReviewAt(normalizedResult, intervalDays);
     }
 
     private int resolveIntervalDays(String normalizedResult, String mode) {
-        if ("study".equals(mode) && "complete".equals(normalizedResult)) {
-            return 1;
-        }
-
         return switch (normalizedResult) {
             case "again" -> 1;
             case "minute" -> 0;
@@ -402,16 +411,12 @@ public class ContentService {
             case "easy" -> 7;
             case "month" -> 30;
             case "year" -> 365;
-            case "complete" -> 1;
+            case "complete" -> 0;
             default -> 1;
         };
     }
 
     private double resolveEaseFactor(String normalizedResult, String mode) {
-        if ("study".equals(mode) && "complete".equals(normalizedResult)) {
-            return 2.5;
-        }
-
         return switch (normalizedResult) {
             case "again" -> 2.1;
             case "minute" -> 2.2;
@@ -420,16 +425,12 @@ public class ContentService {
             case "easy" -> 2.7;
             case "month" -> 3.0;
             case "year" -> 3.2;
-            case "complete" -> 2.5;
+            case "complete" -> 0.0;
             default -> 2.5;
         };
     }
 
     private int resolveRepetitionCount(String normalizedResult, String mode) {
-        if ("study".equals(mode) && "complete".equals(normalizedResult)) {
-            return 1;
-        }
-
         return switch (normalizedResult) {
             case "again" -> 0;
             case "minute" -> 0;
@@ -438,7 +439,7 @@ public class ContentService {
             case "easy" -> 3;
             case "month" -> 4;
             case "year" -> 5;
-            case "complete" -> 1;
+            case "complete" -> 0;
             default -> 1;
         };
     }
