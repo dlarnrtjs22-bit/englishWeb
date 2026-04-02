@@ -1,9 +1,10 @@
 FROM eclipse-temurin:21-jdk-jammy AS builder
 WORKDIR /app
+ENV GRADLE_USER_HOME=/tmp/gradle
 
 COPY gradlew gradlew.bat build.gradle settings.gradle gradle.properties ./
 COPY gradle ./gradle
-RUN chmod +x gradlew
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
 
 COPY src ./src
 RUN ./gradlew --no-daemon bootJar
