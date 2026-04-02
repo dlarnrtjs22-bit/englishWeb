@@ -2,43 +2,59 @@ package com.nativeflow.backend.config;
 
 import com.nativeflow.backend.common.security.AuthInterceptor;
 import com.nativeflow.backend.common.security.CurrentUserArgumentResolver;
-import java.util.Arrays;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.util.StringUtils;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
+@EnableConfigurationProperties(CorsProperties.class)
 public class WebConfig implements WebMvcConfigurer {
 
     private final AuthInterceptor authInterceptor;
     private final CurrentUserArgumentResolver currentUserArgumentResolver;
-    private final List<String> corsAllowedOriginPatterns;
+    private final CorsProperties corsProperties;
 
     public WebConfig(
             AuthInterceptor authInterceptor,
             CurrentUserArgumentResolver currentUserArgumentResolver,
-            @Value("${app.cors.allowed-origin-patterns:http://localhost:5173}") String corsAllowedOriginPatterns
+            CorsProperties corsProperties
     ) {
         this.authInterceptor = authInterceptor;
         this.currentUserArgumentResolver = currentUserArgumentResolver;
-        this.corsAllowedOriginPatterns = Arrays.stream(
-                        StringUtils.commaDelimitedListToStringArray(corsAllowedOriginPatterns)
-                )
-                .map(String::trim)
-                .filter(StringUtils::hasText)
-                .toList();
+        this.corsProperties = corsProperties;
+    }
+
+    @Bean
+    public FilterRegistrationBean<CorsFilter> corsFilter() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(corsProperties.getAllowedOriginPatterns());
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("*"));
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", configuration);
+
+        FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(new CorsFilter(source));
+        bean.setOrder(-102);
+        return bean;
     }
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
-                .allowedOriginPatterns(this.corsAllowedOriginPatterns.toArray(String[]::new))
-                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+                .allowedOriginPatterns(corsProperties.getAllowedOriginPatterns().toArray(String[]::new))
+                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD")
                 .allowedHeaders("*");
     }
 
