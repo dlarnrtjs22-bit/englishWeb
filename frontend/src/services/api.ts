@@ -81,9 +81,9 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
         return retryData as T;
       }
 
-      throw new Error(retryData?.message ?? '인증을 다시 확인해주세요.');
+      throw new Error(retryData?.message ?? '로그인 정보를 다시 확인해 주세요.');
     }
   }
 
-  throw new Error(data?.message ?? '?붿껌??泥섎━?섏? 紐삵뻽?듬땲??');
+  throw new Error(data?.message ?? '요청을 처리하는 중 문제가 발생했습니다.');
 }
