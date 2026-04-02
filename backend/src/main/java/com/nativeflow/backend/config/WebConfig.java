@@ -2,8 +2,11 @@ package com.nativeflow.backend.config;
 
 import com.nativeflow.backend.common.security.AuthInterceptor;
 import com.nativeflow.backend.common.security.CurrentUserArgumentResolver;
+import java.util.Arrays;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.StringUtils;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -14,19 +17,27 @@ public class WebConfig implements WebMvcConfigurer {
 
     private final AuthInterceptor authInterceptor;
     private final CurrentUserArgumentResolver currentUserArgumentResolver;
+    private final List<String> corsAllowedOriginPatterns;
 
     public WebConfig(
             AuthInterceptor authInterceptor,
-            CurrentUserArgumentResolver currentUserArgumentResolver
+            CurrentUserArgumentResolver currentUserArgumentResolver,
+            @Value("${app.cors.allowed-origin-patterns:http://localhost:5173}") String corsAllowedOriginPatterns
     ) {
         this.authInterceptor = authInterceptor;
         this.currentUserArgumentResolver = currentUserArgumentResolver;
+        this.corsAllowedOriginPatterns = Arrays.stream(
+                        StringUtils.commaDelimitedListToStringArray(corsAllowedOriginPatterns)
+                )
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .toList();
     }
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
-                .allowedOrigins("http://localhost:5173")
+                .allowedOriginPatterns(this.corsAllowedOriginPatterns.toArray(String[]::new))
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*");
     }

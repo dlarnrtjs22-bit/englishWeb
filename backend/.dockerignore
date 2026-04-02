@@ -1,0 +1,6 @@
+.gradle
+build
+tmp-db-check
+.git
+.idea
+*.log

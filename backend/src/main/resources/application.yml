@@ -28,6 +28,8 @@ server:
   port: 8080
 
 app:
+  cors:
+    allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:5173}
   database:
     host: aws-1-ap-southeast-1.pooler.supabase.com
     port: 5432
