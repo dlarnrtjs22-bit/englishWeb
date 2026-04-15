@@ -111,7 +111,8 @@ public class LearningSessionService {
                 row.getTargetText(),
                 acceptedAnswers,
                 row.getExampleSentence(),
-                row.getExampleTranslation()
+                row.getExampleTranslation(),
+                List.of()
         );
     }
 

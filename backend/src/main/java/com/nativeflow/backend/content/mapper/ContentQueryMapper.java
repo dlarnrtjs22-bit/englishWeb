@@ -2,6 +2,7 @@ package com.nativeflow.backend.content.mapper;
 
 import com.nativeflow.backend.content.model.DashboardStatsRow;
 import com.nativeflow.backend.content.model.FavoriteRow;
+import com.nativeflow.backend.content.model.LearningExpressionNoteRow;
 import com.nativeflow.backend.content.model.LearningItemRow;
 import com.nativeflow.backend.content.model.ReviewHistoryRow;
 import com.nativeflow.backend.content.model.ReviewQueueRow;
@@ -32,6 +33,8 @@ public interface ContentQueryMapper {
             @Param("itemId") String itemId,
             @Param("mode") String mode
     );
+
+    List<LearningExpressionNoteRow> findLearningItemExpressionNotes(@Param("itemId") String itemId);
 
     String findNextStudyLearningItemId(@Param("userId") String userId, @Param("itemId") String itemId);
 

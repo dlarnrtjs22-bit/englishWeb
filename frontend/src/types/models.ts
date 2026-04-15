@@ -106,6 +106,12 @@ export interface CheckAnswerResponse {
   correctAnswer: string;
   exampleSentence: string;
   exampleTranslation: string;
+  expressionGuides: Array<{
+    expression: string;
+    meaningKo: string;
+    nuanceKo: string;
+    partOfSpeechKo: string;
+  }>;
   isCorrect: boolean;
 }
 

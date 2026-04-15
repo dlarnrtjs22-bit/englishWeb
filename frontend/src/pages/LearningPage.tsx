@@ -88,6 +88,7 @@ export function LearningPage() {
 
   const answerCard = answerResult
     ? {
+        expressionGuides: answerResult.expressionGuides,
         sentence: answerResult.exampleSentence,
         text: answerResult.correctAnswer,
         translation: answerResult.exampleTranslation,
@@ -464,6 +465,32 @@ export function LearningPage() {
               <p className="example-text" style={{ fontSize: '0.9rem' }}>{answerCard ? answerCard.sentence : '정답 확인 후 예문이 표시됩니다.'}</p>
               <p className="example-translation" style={{ fontSize: '0.85rem' }}>{answerCard ? answerCard.translation : '해석도 함께 표시됩니다.'}</p>
             </div>
+            {answerCard?.expressionGuides?.length ? (
+              <div
+                style={{
+                  marginTop: '0.8rem',
+                  paddingTop: '0.8rem',
+                  borderTop: '1px dashed rgba(198, 197, 212, 0.45)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.55rem',
+                }}
+              >
+                <strong style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>주요 단어</strong>
+                {answerCard.expressionGuides.map((guide) => (
+                  <div key={`${guide.expression}-${guide.partOfSpeechKo}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.18rem' }}>
+                    <p style={{ margin: 0, fontSize: '0.84rem', lineHeight: '1.45', color: 'var(--text)', fontWeight: 600 }}>
+                      {guide.expression} ({guide.partOfSpeechKo}) : {guide.meaningKo}
+                    </p>
+                    {guide.nuanceKo ? (
+                      <p style={{ margin: 0, fontSize: '0.78rem', lineHeight: '1.45', color: 'var(--muted)' }}>
+                        {guide.nuanceKo}
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </article>
         </section>
 

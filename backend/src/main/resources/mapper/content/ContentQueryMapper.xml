@@ -291,6 +291,18 @@
         limit 1
     </select>
 
+    <select id="findLearningItemExpressionNotes" resultType="com.nativeflow.backend.content.model.LearningExpressionNoteRow">
+        select
+            lien.expression_text,
+            lien.part_of_speech_ko,
+            lien.meaning_ko,
+            lien.nuance_ko,
+            lien.order_index
+        from learning_item_expression_notes lien
+        where lien.learning_item_id = cast(#{itemId} as uuid)
+        order by lien.order_index asc
+    </select>
+
     <select id="findNextStudyLearningItemId" resultType="string">
         with current_item as (
             select li.id, li.pack_id, li.order_index

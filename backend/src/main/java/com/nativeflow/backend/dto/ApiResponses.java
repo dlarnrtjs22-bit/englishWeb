@@ -105,7 +105,16 @@ public final class ApiResponses {
             String correctAnswer,
             List<String> acceptedAnswers,
             String exampleSentence,
-            String exampleTranslation
+            String exampleTranslation,
+            List<ExpressionGuideDto> expressionGuides
+    ) {
+    }
+
+    public record ExpressionGuideDto(
+            String expression,
+            String partOfSpeechKo,
+            String meaningKo,
+            String nuanceKo
     ) {
     }
 

@@ -6,6 +6,7 @@ import com.nativeflow.backend.content.mapper.ContentCommandMapper;
 import com.nativeflow.backend.content.mapper.ContentQueryMapper;
 import com.nativeflow.backend.content.model.DashboardStatsRow;
 import com.nativeflow.backend.content.model.FavoriteRow;
+import com.nativeflow.backend.content.model.LearningExpressionNoteRow;
 import com.nativeflow.backend.content.model.LearningItemRow;
 import com.nativeflow.backend.content.model.ReviewHistoryRow;
 import com.nativeflow.backend.content.model.ReviewQueueRow;
@@ -178,12 +179,21 @@ public class ContentService {
         }
 
         LearningItemRow row = contentQueryMapper.findLearningItem(userId, itemId, normalizedMode);
+        List<ApiResponses.ExpressionGuideDto> expressionGuides = contentQueryMapper.findLearningItemExpressionNotes(itemId).stream()
+                .map(note -> new ApiResponses.ExpressionGuideDto(
+                        note.getExpressionText(),
+                        note.getPartOfSpeechKo(),
+                        note.getMeaningKo(),
+                        note.getNuanceKo()
+                ))
+                .toList();
         return new ApiResponses.CheckAnswerResponse(
                 isCorrect,
                 row.getTargetText(),
                 acceptedAnswers,
                 row.getExampleSentence(),
-                row.getExampleTranslation()
+                row.getExampleTranslation(),
+                expressionGuides
         );
     }
 
